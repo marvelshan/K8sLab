@@ -43,3 +43,11 @@ network:
             set-name: enp8s0
     version: 2
 ```
+
+<img width="615" height="213" alt="截圖 2025-09-14 上午11 11 44" src="https://github.com/user-attachments/assets/b6865332-33a4-47c8-97f9-aa8ef16f689c" />
+
+本日推薦日文歌曲：[Fujii Kaze - damn](https://youtu.be/yP7K2lXr6GA?si=wLPf19bXaOeA-vyg)
+
+藤井風這種 chill 的歌曲真的很讚，這種日本戀愛的歌曲都可以比擬成人生，有時候自己愚蠢無濟於事，但往往那些青澀，能夠讓自己重新愛上很多東西，繼續往明天邁進～～
+
+
