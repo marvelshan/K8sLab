@@ -55,6 +55,7 @@
 > - Loosely coupled
 >
 > Services are typically organized around business capabilities. Each service is often owned by a single, small team.
+<img width="1019" height="443" alt="截圖 2025-09-15 下午1 33 34" src="https://github.com/user-attachments/assets/0d342f62-9ef1-4b76-904b-3b0e507c446c" />
 
 是一種架構風格，它將應用程式設計為由兩個或更多服務所組成的集合，服務具有以下特性，可獨立部署，低耦合，服務通常是依照業務能力來劃分，每個服務通常由一個小型團隊負責。
 
