@@ -107,11 +107,8 @@ k8s-n0                     : ok=26   changed=3    unreachable=0    failed=0    s
 k8s-n1                     : ok=25   changed=3    unreachable=0    failed=1    skipped=48   rescued=0    ignored=0   
 localhost                  : ok=4    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 ```
-因為我在開機器的時候因為 Quota 不夠，在 k8s-n1 這台機器只開啟了 d1.tiny 的機器，顯然 ram 只有 512MB 是不太夠的
-
-目前的做法我是去調整`minimal_node_memory_mb`的限制，讓他降至512MB，假如未來有問題再來調整吧～
+因為我在開機器的時候因為 Quota 不夠，在 k8s-n1 這台機器只開啟了 d1.tiny 的機器，顯然 ram 只有 512MB 是不太夠的，這邊的問題是可以用以下指令去尋找說 `minimal_node_memory_mb` 這裡的最低 memory 是 1024MB 像我所設定的 512MB 顯然時不足夠的，這邊就要去調整 ram 的大小去符合他，調整完就可以順利啟動啦！
 ```
 grep -R "minimal_node_memory_mb" inventory/mycluster/group_vars/ roles/kubernetes/preinstall/defaults/
 roles/kubernetes/preinstall/defaults/main.yml:minimal_node_memory_mb: 1024
 ```
-假如沒有顯示 error 就是成功安裝完畢啦！（目前還是失敗QQ）
