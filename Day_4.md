@@ -44,6 +44,8 @@
 使用者下指令 → API Server 收到 → etcd 記錄狀態 → Scheduler 分配 → worker node 上的 kubelet 執行 → kube-proxy 處理網路 → Pod 真正跑起來。  
 
 ---
+
+### 實作環節
 接著是繼續昨天實作的部分，昨天完成了 ansible 去啟動了 kubspray，後來到 vm 裡面發現沒辦法連到外網，發現了沒有開私有網段給 NAT 連出去，就解決了問題，成功設定成功，不然真的很躁QQ
 
 <img width="1135" height="723" alt="截圖 2025-09-16 下午2 02 26" src="https://github.com/user-attachments/assets/49eca180-6b25-4ffe-8f59-2a4ba7c25a85" />
@@ -99,6 +101,40 @@ Connection to 192.168.200.126 6443 port [tcp/*] succeeded!
 結果顯示連線成功，表示 bastion 可以透過網路連到 Kubernetes API Server，接下來再執行 kubectl get nodes 就可以正常看到 cluster 裡的 node 了
 
 <img width="931" height="180" alt="截圖 2025-09-16 下午2 01 44" src="https://github.com/user-attachments/assets/d3964c6d-e17d-4edf-9296-74877c62c642" />
+
+#### 手動建立一個最簡單的 Pod
+1. 建立 pod yaml
+```
+vi nginx-pod.yaml
+```
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod
+  labels:
+    app: nginx
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.25
+      ports:
+        - containerPort: 80
+```
+
+2. 套用 Pod
+```
+ubuntu@bastion-host:~$ kubectl apply -f nginx-pod.yaml
+pod/nginx-pod created
+```
+
+3. 使用 Port Forward 測試存取
+```
+ubuntu@bastion-host:~$ kubectl port-forward pod/nginx-pod 8080:80
+Forwarding from 127.0.0.1:8080 -> 80
+Forwarding from [::1]:8080 -> 80
+```
+這個指令會把本地機器（bastion host）的 8080 port，轉發到 Pod 裡面的 80 port
 
 #### Reference
 https://ithelp.ithome.com.tw/articles/10294526
