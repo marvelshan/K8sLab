@@ -15,6 +15,7 @@
 - kubelet：它就像現場的班長，負責跟老闆回報狀況，並確保工作有被正確執行。  
 - kube-proxy：這個有點像網路交通警察，幫忙把外部的請求導流到正確的應用程式。  
 - Pod：這才是真正工作的員工，也就是實際跑應用程式的地方，Pod 裡面會包著一個或多個容器。  
+<img width="667" height="445" alt="截圖 2025-09-16 下午2 01 09" src="https://github.com/user-attachments/assets/005c3907-63ef-4d36-836e-63800c551199" />
 
 假設我們現在要在 k8s 上面跑一個應用程式，整個流程大概會是這樣：  
 
@@ -44,6 +45,8 @@
 
 ---
 接著是繼續昨天實作的部分，昨天完成了 ansible 去啟動了 kubspray，後來到 vm 裡面發現沒辦法連到外網，發現了沒有開私有網段給 NAT 連出去，就解決了問題，成功設定成功，不然真的很躁QQ
+
+<img width="1135" height="723" alt="截圖 2025-09-16 下午2 02 26" src="https://github.com/user-attachments/assets/49eca180-6b25-4ffe-8f59-2a4ba7c25a85" />
 
 等 Ansible 完成部署後，我們切換到 master node (m0) 做一些設定，讓本地的 kubectl 可以操作 cluster：
 ```
@@ -94,3 +97,5 @@ Connection to 192.168.200.126 6443 port [tcp/*] succeeded!
 ```
 
 結果顯示連線成功，表示 bastion 可以透過網路連到 Kubernetes API Server，接下來再執行 kubectl get nodes 就可以正常看到 cluster 裡的 node 了
+
+<img width="931" height="180" alt="截圖 2025-09-16 下午2 01 44" src="https://github.com/user-attachments/assets/d3964c6d-e17d-4edf-9296-74877c62c642" />
