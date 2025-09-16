@@ -99,3 +99,9 @@ Connection to 192.168.200.126 6443 port [tcp/*] succeeded!
 結果顯示連線成功，表示 bastion 可以透過網路連到 Kubernetes API Server，接下來再執行 kubectl get nodes 就可以正常看到 cluster 裡的 node 了
 
 <img width="931" height="180" alt="截圖 2025-09-16 下午2 01 44" src="https://github.com/user-attachments/assets/d3964c6d-e17d-4edf-9296-74877c62c642" />
+
+#### Reference
+https://ithelp.ithome.com.tw/articles/10294526
+
+#### 特別感謝
+特別感謝 Tico，對於操作上遇到問題都很有耐心的回答！而且每個排錯的過程都觀察入微，小的學習到相當的多！
