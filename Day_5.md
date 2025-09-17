@@ -1,5 +1,7 @@
 ## K8S Lab Day_5
 
+<img width="837" height="289" alt="截圖 2025-09-17 下午3 46 19" src="https://github.com/user-attachments/assets/78f296f6-ded4-4f70-ad0d-d87baf935429" />
+
 ### Service
 Kubernetes 裡面，Service 是一種抽象化的資源，主要解決兩個問題：
 - Pod IP 會隨著重新建立而改變，不好固定
