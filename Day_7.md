@@ -53,7 +53,7 @@
    description = "Kubespray environment with Nix";
    ```
 
-   就是一個描述，讓你知道這個 flake 是幹嘛用的。
+   就是一個描述，讓你知道這個 flake 是幹嘛用的
 
 2. **inputs**
 
@@ -63,7 +63,7 @@
    };
    ```
 
-   Nix 的套件來源（相當於 repo），這裡我們指定用 **24.05 穩定版的 nixpkgs**，確保環境可重現。
+   Nix 的套件來源（相當於 repo），這裡我們指定用 **24.05 穩定版的 nixpkgs**，確保環境可重現
 
 3. **outputs**
 
@@ -71,8 +71,7 @@
    outputs = { self, nixpkgs }: ...
    ```
 
-   定義「我這個 flake 要產生什麼東西」。
-   在這裡，我們要輸出的是 **一個開發環境（devShell）**。
+   定義「我這個 flake 要產生什麼東西」，在這裡，我們要輸出的是 **一個開發環境（devShell）**。
 
 4. **system & pkgs**
 
@@ -81,7 +80,7 @@
    pkgs = import nixpkgs { inherit system; };
    ```
 
-   指定系統架構（這裡是 Linux x86\_64），然後把 nixpkgs 匯入成套件集合 `pkgs`。
+   指定系統架構（這裡是 Linux x86\_64），然後把 nixpkgs 匯入成套件集合 `pkgs`
 
 5. **devShells**
 
@@ -89,7 +88,7 @@
    devShells.${system}.default = pkgs.mkShell { ... };
    ```
 
-   這裡定義「我想要進入的開發環境」。
+   這裡定義「我想要進入的開發環境」
 
    * `buildInputs` → 我需要哪些工具？
      這裡裝了 Ansible、Python、kubectl、Helm 等，專門為 Kubespray 準備
