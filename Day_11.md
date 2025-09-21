@@ -12,15 +12,22 @@
 
 在這個過程是不是跟 HTTPS 的憑證機制很像，HTTPS 也是用 X.509 certificates 來驗證伺服器身份，並建立加密通道其中過程的差異是 HTTPS 所以賴的第三方 CA 就像是 Istio 內建的 istiod，HTTPS 主要針對 client side 和 server side 的單向驗證，而 istio 是針對服務與服務之間的雙向驗證
 
+<img width="380" height="423" alt="截圖 2025-09-21 上午11 03 39" src="https://github.com/user-attachments/assets/8454a69e-f1c3-45d2-938a-c18dc8044bbe" />
+
+
 > Istio 的 identity 機制其實就是把「HTTPS 憑證的觀念」套用到服務之間，只是它做到更**自動化、內建化、以 workload 為中心**，這就是為什麼能在大規模微服務環境裡實現 **零信任 (Zero Trust)** 的原因
 
-## Mutual TLS authentication
+## Authentication
 
 在 Istio 中，Authentication 是透過 Envoy sidecar 來執行的，所有 service-to-service 的流量都會先進入本地的 Envoy，再透過 mTLS 建立安全通道，首先 client 發出的 Outbound 流量會被攔截並轉發到 local sidecar Envoy，client side Envoy 與 server side Envoy 進行 mTLS 握手，client side Envoy 還會檢查 server side Envoy 的憑證，確保它對應正確的 service account，雙方 Envoy 建立好加密的 mTLS 連線後，才會傳送實際的應用流量，server side Envoy 收到流量後，會進行授權檢查，若符合規則才轉發給後端服務
+
+<img width="640" height="466" alt="截圖 2025-09-21 上午11 11 12" src="https://github.com/user-attachments/assets/9ad341ab-6b4c-4b7f-983a-fdc203f2c5c6" />
 
 ## Authorization Policy
 
 在 Istio 中，它提供了 mesh- 、namespace- 與 workload- 三種範圍，讓你能夠依照需求逐步導入 mTLS 與存取控制，它的好處是支援 workload-to-workload 以及 end-user-to-workload 的授權模式，提供統一的 AuthorizationPolicy CRD，支援自訂條件，可以根據 request header、IP、service account 等屬性決定是否允許或拒絕
+
+<img width="725" height="336" alt="截圖 2025-09-21 上午11 14 42" src="https://github.com/user-attachments/assets/efa0d830-3ca0-41b6-9b98-7d94f1d8e2b9" />
 
 ## 實作
 
