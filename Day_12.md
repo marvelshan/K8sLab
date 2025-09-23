@@ -28,15 +28,6 @@ fi
 
 ## Traffic Management
 
-很好，你這樣安排就像是在做 **Istio Traffic Management 的實驗手冊**。
-你提到的這幾個功能，基本上就是 **微服務在真實世界運作時的流量控制需求**，每一個都對應到一種「實務場景」。
-
-我幫你把每個主題口語化，並且舉例說明「什麼情況下會用到」，讓你在實作前有一個完整的脈絡：
-
----
-
-## Traffic Management 功能與場景
-
 ### 1. Request Routing
 
 是根據請求的條件（HTTP Header、URL Path、使用者 ID）把流量導到不同版本的服務，應用的場景通常在你要做 A/B 測試 或 Canary 部署
