@@ -8,7 +8,7 @@
 
 ## Enabling Rate Limits using Envoy
 
-因為要來快速地來測試，所以今天會使用 post-forward 去繞過一些繁雜的設定去快速的測試，這個指令直接將本地的 k8s cluster 和 istio-ingressgateway 之劍建立一個安全的通道，直接將本地的 8080 導到 port 80，簡單來說我們搭建了一條臨時的代理通道，而不需要依賴外部 IP、LoadBalancer 或 NodePort
+因為要來快速地來測試，所以今天會使用 port-forward 去繞過一些繁雜的設定去快速的測試，這個指令直接將本地的 k8s cluster 和 istio-ingressgateway 之劍建立一個安全的通道，直接將本地的 8080 導到 port 80，簡單來說我們搭建了一條臨時的代理通道，而不需要依賴外部 IP、LoadBalancer 或 NodePort
 
 ```bash
 # 建立 istio 提供的 sample app bookinfo
@@ -20,7 +20,7 @@ kubectl apply -f samples/bookinfo/networking/bookinfo-gateway.yaml
 kubectl port-forward -n istio-system svc/istio-ingressgateway 8080:80
 ```
 
-![post-forwarding](https://github.com/user-attachments/assets/94bdd4e6-798b-4d25-8c46-6078bb0d79a9)
+![port-forwarding](https://github.com/user-attachments/assets/94bdd4e6-798b-4d25-8c46-6078bb0d79a9)
 
 接著嘗試看看是否有正確的執行
 
