@@ -14,6 +14,8 @@
 kubectl port-forward -n istio-system svc/istio-ingressgateway 8080:80
 ```
 
+![post-forwarding](https://github.com/user-attachments/assets/94bdd4e6-798b-4d25-8c46-6078bb0d79a9)
+
 接著嘗試看看是否有正確的執行
 
 ```bash
