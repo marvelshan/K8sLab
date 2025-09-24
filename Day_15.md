@@ -10,7 +10,11 @@
 
 講到 observability 就要提到曾經出現過的組件 Mixer，他主要會從 Envoy sidecar 收集各種流量資，會根據配置好的策略對流量進行控制，但是在 Istio 1.5 以前，Mixer 是核心，負責所有 telemetry 與 policy，Envoy sidecar 主要做資料收集，真正的策略判斷和資料處理在 Mixer，但後來 Istio 逐步移除 Mixer（deprecate），引入 Telemetry v2 / WASM-based extensions，遙測和策略處理直接在 Envoy sidecar 內部完成，不再依賴 Mixer，因此也提升了效能、降低延遲，並且 Telemetry API 可以取代 Mixer 配置自訂 metrics、tag、過濾規則等，這邊做了一個比較
 
-| 功能                | Mixer 時期                 | Telemetry v2 / Envoy 時期   |
+![mixer](https://github.com/user-attachments/assets/ffe9a54d-49a0-4b4b-8997-d4147fa308c6)
+
+![Telemetry v2](https://github.com/user-attachments/assets/7c087702-79ca-4879-bc17-d245b156e810)
+
+| 功能                | Mixer               | Telemetry v2 / Envoy   |
 | ------------------- | -------------------------- | --------------------------- |
 | 收集指標            | Envoy → Mixer → Prometheus | Envoy → Prometheus          |
 | Tag 自訂 / 指標修改 | Mixer 配置                 | Telemetry API 配置          |
