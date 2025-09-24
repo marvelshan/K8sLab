@@ -11,6 +11,12 @@
 因為要來快速地來測試，所以今天會使用 post-forward 去繞過一些繁雜的設定去快速的測試，這個指令直接將本地的 k8s cluster 和 istio-ingressgateway 之劍建立一個安全的通道，直接將本地的 8080 導到 port 80，簡單來說我們搭建了一條臨時的代理通道，而不需要依賴外部 IP、LoadBalancer 或 NodePort
 
 ```bash
+# 建立 istio 提供的 sample app bookinfo
+kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
+kubectl apply -f samples/bookinfo/networking/bookinfo-gateway.yaml
+```
+
+```bash
 kubectl port-forward -n istio-system svc/istio-ingressgateway 8080:80
 ```
 
@@ -37,7 +43,6 @@ x-envoy-upstream-service-time: 171
 在 Istio ingressgateway 上限制流量速率，每個 client IP 最多 2 requests/5s，超過的請求要回 429 的 Too Many Requests
 
 ![rate-limit](https://github.com/user-attachments/assets/f4ac7393-36ea-424c-a4ca-8bb6ce6bb687)
-
 
 - 建立 RateLimit EnvoyFilter
 
