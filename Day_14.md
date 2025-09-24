@@ -36,6 +36,9 @@ x-envoy-upstream-service-time: 171
 
 在 Istio ingressgateway 上限制流量速率，每個 client IP 最多 2 requests/5s，超過的請求要回 429 的 Too Many Requests
 
+![rate-limit]([https://github.com/user-attachments/assets/94bdd4e6-798b-4d25-8c46-6078bb0d79a9](https://github.com/user-attachments/assets/f4ac7393-36ea-424c-a4ca-8bb6ce6bb687))
+
+
 - 建立 RateLimit EnvoyFilter
 
 ```yaml
