@@ -14,7 +14,7 @@
 
 ![Telemetry v2](https://github.com/user-attachments/assets/7c087702-79ca-4879-bc17-d245b156e810)
 
-| 功能                | Mixer               | Telemetry v2 / Envoy   |
+| 功能                | Mixer                      | Telemetry v2 / Envoy        |
 | ------------------- | -------------------------- | --------------------------- |
 | 收集指標            | Envoy → Mixer → Prometheus | Envoy → Prometheus          |
 | Tag 自訂 / 指標修改 | Mixer 配置                 | Telemetry API 配置          |
@@ -108,3 +108,5 @@ spec:
 ## Reference
 
 https://istio.io/latest/docs/tasks/observability/telemetry/
+
+https://outshift.cisco.com/blog/istio-mixerless-telemetry
