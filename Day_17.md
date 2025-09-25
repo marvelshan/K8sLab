@@ -145,7 +145,7 @@ Events:
 
 ```bash
 ssh <k8s-n1_IP_or_hostname>
-sudo chmod -R 777 /mnt/data/loki
+sudo chmod -R 755 /mnt/data/loki
 ```
 
 然後返回並刪除 loki 的 pod 讓他去重新啟動
