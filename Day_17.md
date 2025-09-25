@@ -1,175 +1,93 @@
 ## K8S Lab Day_17
 
-# Istio Log 戰術啟動，配置 Access Logs 與 Debug 實戰記
-
 ## 前言
 
-昨天介紹了簡單的 metrics 的用法，今天要來示範如何使用 Istio Telemetry API 設定 access logs，並嘗試如何過濾、禁用或分類日誌
+昨天我們做了簡單的 metrics 查看，今天做一個 Istio sidecar 直接打 log 到 stdout
 
-## Configure access logs with Telemetry API
+### 1. ProxyMetadata
 
-### 安裝示範服務與 OpenTelemetry + Loki
-
-```bash
-# 安裝 curl 測試 Pod
-kubectl apply -f samples/curl/curl.yaml
-kubectl apply -f <(istioctl kube-inject -f samples/curl/curl.yaml)
-
-export SOURCE_POD=$(kubectl get pod -l app=curl -o jsonpath={.items..metadata.name})
-
-kubectl apply -f samples/httpbin/httpbin.yaml
-kubectl apply -f <(istioctl kube-inject -f samples/httpbin/httpbin.yaml)
-
-# 安裝 Loki 與 OpenTelemetry Collector
-istioctl install -f samples/open-telemetry/loki/iop.yaml --skip-confirmation
-kubectl apply -f samples/addons/loki.yaml -n istio-system
-kubectl apply -f samples/open-telemetry/loki/otel.yaml -n istio-system
-```
-
-這時候我們去檢查服務是否有正常啟動
+Istio 的 sidecar 需要設定 `proxyMetadata.ACCESS_LOG_FILE`，才能把 log 打到指定位置，建立一個 mesh-wide 的 ProxyMetadata
 
 ```bash
-kubectl get pods -n istio-system -l app=loki
-kubectl get pods -n istio-system -l app=opentelemetry-collector
-```
-
-發現了還沒有任何帶有 app=loki label 的 Pod 出現
-
-```bash
-No resources found in istio-system namespace.
-NAME                                       READY   STATUS    RESTARTS   AGE
-opentelemetry-collector-684c6f9f4c-sdk5d   1/1     Running   0          2m12s
-```
-
-現在我們就要一步一步的來去找到問題，首先我們要先看 loki 是否有嘗試被創建
-
-```bash
-kubectl get pods -n istio-system | grep loki
-```
-
-```bash
-loki-0                                     0/2     Pending   0          4m11s
-```
-
-看起來 pod 是存在，但是他是處於一個 pending 的狀態
-
-```bash
-kubectl describe pod -n istio-system loki-0
-```
-
-接著我們就看到他的 event 是說我們沒有正確的綁定 PersistentVolumeClaim，看來我們是要自己創建並且綁定了
-
-```bash
-...
-Events:
-  Type     Reason            Age    From               Message
-  ----     ------            ----   ----               -------
-  Warning  FailedScheduling  4m15s  default-scheduler  0/4 nodes are available: pod has unbound immediate PersistentVolumeClaims. preemption: 0/4 nodes are available: 4 Preemption is not helpful for scheduling.
-```
-
-首先還是必須要先看一下有沒有
-
-```bash
-
-kubectl get pv loki-pv
-```
-
-然後創建 loki-pv.yaml
-
-```yaml
-apiVersion: v1
-kind: PersistentVolume
+cat <<EOF | kubectl apply -n istio-system -f -
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
 metadata:
-  name: loki-pv
+  name: mesh-log-stdout
 spec:
-  capacity:
-    storage: 10Gi
-  volumeMode: Filesystem
-  accessModes:
-    - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: manual
-  hostPath:
-    path: "/mnt/data/loki"
+  meshConfig:
+    defaultConfig:
+      proxyMetadata:
+        ACCESS_LOG_FILE: /dev/stdout
+EOF
 ```
 
-接著我們要讓我們的 loki 綁定上手動創建的 PV
+### 2. 測試的 `httpbin` 和 `curl`
 
 ```bash
-
-kubectl edit pvc -n istio-system storage-loki-0
+kubectl apply -f samples/httpbin/httpbin.yaml
+kubectl apply -f samples/curl/curl.yaml
 ```
 
-```yaml
+### 3. 使用 Telemetry 設定
+
+建立一個 Telemetry yaml，啟動 mesh-wide logging
+
+```bash
+cat <<EOF | kubectl apply -n istio-system -f -
+apiVersion: telemetry.istio.io/v1
+kind: Telemetry
+metadata:
+  name: mesh-logging-stdout
 spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Gi
-  storageClassName: manual # 新增這一行
-  volumeMode: Filesystem
+  accessLogging:
+  - providers:
+    - name: envoy
+EOF
 ```
 
-就可以來檢查是否有正確的被 bound
+### 4. 發送請求觸發 log
 
 ```bash
-kubectl get pvc -n istio-system storage-loki-0
+SOURCE_POD=$(kubectl get pod -l app=curl -o jsonpath={.items..metadata.name})
+kubectl exec "$SOURCE_POD" -c curl -- curl -sS http://httpbin:8000/get
 ```
 
-再來檢查一下是否有正確啟動啦
+多發幾次：
 
 ```bash
-kubectl describe pod -n istio-system loki-0
+kubectl exec "$SOURCE_POD" -c curl -- curl -sS http://httpbin:8000/status/404
 ```
 
-看到下面的 event 出現 `Successfully assigned istio-system/loki-0 to k8s-n1` 就恭喜綁定成功啦！
+### 5. 查看 Access Logs
+
+到 httpbin 的 sidecar 看
 
 ```bash
-Events:
-  Type     Reason            Age                 From               Message
-  ----     ------            ----                ----               -------
-  Warning  FailedScheduling  8m12s               default-scheduler  0/4 nodes are available: pod has unbound immediate PersistentVolumeClaims. preemption: 0/4 nodes are available: 4 Preemption is not helpful for scheduling.
-  Warning  FailedScheduling  3m (x2 over 8m10s)  default-scheduler  0/4 nodes are available: pod has unbound immediate PersistentVolumeClaims. preemption: 0/4 nodes are available: 4 Preemption is not helpful for scheduling.
-  Normal   Scheduled         28s                 default-scheduler  Successfully assigned istio-system/loki-0 to k8s-n1
-  Normal   Pulled            29s                 kubelet            Container image "kiwigrid/k8s-sidecar:1.30.7" already present on machine
-  Normal   Created           28s                 kubelet            Created container: loki-sc-rules
-  Normal   Started           28s                 kubelet            Started container loki-sc-rules
-  Normal   Pulled            6s (x3 over 29s)    kubelet            Container image "docker.io/grafana/loki:3.5.3" already present on machine
-  Normal   Created           6s (x3 over 29s)    kubelet            Created container: loki
-  Normal   Started           6s (x3 over 29s)    kubelet            Started container loki
-  Warning  BackOff           4s (x5 over 27s)    kubelet            Back-off restarting failed container loki in pod loki-0_istio-system(2b89cfc0-c408-4358-9d78-a5453c584d1e)
+HTTPBIN_POD=$(kubectl get pod -l app=httpbin -o jsonpath={.items..metadata.name})
+kubectl logs "$HTTPBIN_POD" -c istio-proxy | grep "GET /"
 ```
 
-但又往下看發現另一個 event `Back-off restarting failed container loki in pod loki-0_istio-system`，loki 的 pod 目前呈現 CrashLoopBackOff 的狀態，他在 `mkdir /var/loki/rules: permission denied` 的時候出現了權限的問題，所以我們現在要 ssh 進入我們的 worker node 去開啟權限
+我們就會看到
 
 ```bash
-ssh <k8s-n1_IP_or_hostname>
-sudo chmod -R 755 /mnt/data/loki
+[2025-09-25T06:03:57.982Z] "GET /get HTTP/1.1" 200 - via_upstream - "-" 0 640 2 1 "-" "curl/8.16.0" "0baabc4d-de4e-46dc-8e4e-044863e8b779" "httpbin:8000" "10.233.118.148:8080" inbound|8080|| 127.0.0.6:55269 10.233.118.148:8080 10.233.97.222:50034 outbound_.8000_._.httpbin.default.svc.cluster.local default
+[2025-09-25T06:04:03.320Z] "GET /status/404 HTTP/1.1" 404 - via_upstream - "-" 0 0 1 0 "-" "curl/8.16.0" "43418893-0770-4bb0-bcb4-0ad31e07d930" "httpbin:8000" "10.233.118.148:8080" inbound|8080|| 127.0.0.6:49379 10.233.118.148:8080 10.233.97.222:50036 outbound_.8000_._.httpbin.default.svc.cluster.local default
 ```
 
-然後返回並刪除 loki 的 pod 讓他去重新啟動
+### 最後就是要清理
 
 ```bash
-kubectl delete pod -n istio-system loki-0
+kubectl delete -f samples/httpbin/httpbin.yaml
+kubectl delete -f samples/curl/curl.yaml
+kubectl delete telemetry mesh-logging-stdout -n istio-system
+kubectl delete IstioOperator mesh-log-stdout -n istio-system
 ```
-
-我們在查看一下是否有正確啟動
-
-```bash
-kubectl get pods -n istio-system | grep loki
-```
-
-```bash
-loki-0                                     2/2     Running   0          118s
-```
-
-看起來就有正確的被啟動啦！
 
 ## 總結
 
-今天原本要來搞 log 的獲取，怎麼跑來 debug 了 XD 那這樣也大概介紹了怎麼查看 pod 狀態的問題，先說這不一定是 best practice，但可以用這種方法來查看問題，但 root cause 還是必須要去細查！
+這大概就是簡單的 log 測試啦～接著，有點累了，明天再想想要來做什麼吧
 
 ## Reference
 
-https://istio.io/latest/docs/tasks/observability/logs/access-log/
+https://istio.io/latest/docs/tasks/observability/logs/telemetry-api/
