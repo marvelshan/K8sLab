@@ -1,5 +1,7 @@
 ## K8S Lab Day_17
 
+# Day15: Istio Sidecar 將 Access Logs 輸出到 stdout 實戰
+
 ## 前言
 
 昨天我們做了簡單的 metrics 查看，今天做一個 Istio sidecar 直接打 log 到 stdout
