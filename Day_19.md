@@ -1,42 +1,191 @@
 ## K8S Lab Day_19
 
-# Day17: 在 Kubernetes 上使用 Rook 部署 Ceph 作為分散式儲存
+# Day17: Istio Gateway 戰術：Ingress / Egress Gateway 的配置與安全防護
 
 ## 前言
 
-前幾天陸陸續續地把 istio 的功能都介紹完了，今天來試試個 Ceph，來作為分布式儲存的系統吧
+在 istio 中 Gateway 作為流量的出入口，有分為 Ingress Gateway 和 Egress Gateway，下面會簡單實作試著控制流量的進出～
 
-## 
+## Gateway
 
-Ceph 是一個開源的分散式儲存系統，目標是提供統一的儲存平台，我的想法比較像是不被 vendor lock-in 的工具啦，主要有三種的存取模式，Object Storage、Block Storage、File System，他主要的運作核心是 RADOS（Reliable, Autonomous, Distributed Object Store），透過 CRUSH 演算法來決定資料放在哪些節點上，並確保多副本或 Erasure Coding，可以達到高可用的效果
+Istio 的 Gateway 本質上是一個 envoy proxy 的 Deployment + Service，透過 Gateway + VirtualService CRD 控制流量進出，Ingress Gateway 通常部署在 istio-system namespace，以 LoadBalancer / NodePort / ClusterIP + port-forward 方式暴露，Egress Gateway 需要 Explicit Configuration，讓內部流量強制經過 Egress，再進行外部存取
 
-![Ceph](https://github.com/user-attachments/assets/4569c274-4a1e-4674-9b45-9f82a6166d79)
+## 那跟 k8s service 相關服務又有什麼差異呢？
 
-並不直接操作 OSD，而是透過 Ceph 提供的 Interface Layer 來存取，這一層是 Ceph 對外提供的不同存取方式，RBD (RADOS Block Device)提供區塊儲存，適合掛載給 VM 或 DB，RADOS GW (Gateway)提供 S3 / Swift 相容的物件儲存 API，適合存放圖片、影片、備份等非結構化資料，CephFS (Ceph File System)提供 POSIX 相容的檔案系統，支援多個 Client 共用檔案目錄，Ceph Cluster of Computers，這層是真正執行在多台機器上的 Daemon，Ceph 主要有三個核心的 component
+| 功能面向           | K8s Service             | Istio Ingress Gateway                     | Istio Egress Gateway            |
+| ------------------ | ----------------------- | ----------------------------------------- | ------------------------------- |
+| **流量路由**       | 只能做 L4 負載均衡      | L7 路由（HTTP header、path、host）        | L7 路由（外部 API domain、URI） |
+| **安全防護**       | 無法檢查 request / user | 支援 TLS termination、AuthorizationPolicy | 可限制白名單                    |
+| **進出 Mesh 控制** | 沒有                    | 控制外部 → Mesh                           | 控制 Mesh → 外部                |
+| **Observability**  | 只能看 Service 狀態     | 內建 Telemetry、Tracing                   | 內建 Telemetry、Tracing         |
 
-| 名稱                            | 英文         | 功能與角色                                                                                                                                     | 部署數量                                                           |
-| :------------------------------ | :----------- | :--------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------- |
-| **Monitor (MON)**               | Ceph Monitor | 它們是 Ceph 的心臟，負責維護 cluster 的 Cluster Map ，這包含了所有 OSD、MGR 和用戶的狀態。MON 之間透過 Paxos/Raft 等共識演算法來確保狀態一致性 | 建議運行 3 個或 5 個，以達成法定人數（Quorum）來確保高可用性       |
-| **Object Storage Daemon (OSD)** | Ceph OSD     | 負責實際儲存資料，處理資料複製、恢復、再平衡。每個 OSD 通常對應到伺服器上的一個 raw block device 或分區                                        | 叢集運行越多 OSD，容量越大，效能也越好                             |
-| **Manager (MGR)**               | Ceph Manager | 負責 Ceph 叢集的監控和管理，收集運行狀態指標、提供 API 介面給外部管理工具，例如 Ceph Dashboard                                                 | 建議運行 2 個，一個 Active，一個 Standby，以確保管理服務的高可用性 |
+## Ingress Gateway 實戰
 
-首先我們就來安裝吧，我們所使用到的是 rook，Rook 專門作為在 k8s 上的 Orchestrator，相較於 `ceph-deploy` 和 `ansible` 的做法，Rook 已經把流程都抽象化，直接用 CRDs 來定義 Ceph Cluster 相關的 component，就可以省去很多繁瑣的流程
+建立 Gateway
 
-```bash
-git clone --single-branch --branch v1.18.2 https://github.com/rook/rook.git
-cd rook/deploy/examples
-kubectl create -f crds.yaml -f common.yaml -f csi-operator.yaml -f operator.yaml
-kubectl create -f cluster.yaml
+```yaml
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: bookinfo-gateway
+  namespace: default
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*"
 ```
 
-其實搭建的步驟蠻簡單明瞭的，接下來我們就可以利用指令來查看是否已經部署完成
+建立 VirtualService
+
+```yaml
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: bookinfo
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - bookinfo-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /productpage
+      route:
+        - destination:
+            host: productpage
+            port:
+              number: 9080
+```
+
+接下來就是執行啦！
 
 ```bash
-kubectl -n rook-ceph get pod
+kubectl apply -f gateway.yaml
+kubectl apply -f virtualservice.yaml
+kubectl get svc -n istio-ingress istio-ingressgateway
 ```
+
+```bash
+kubectl port-forward -n istio-ingress svc/istio-ingressgateway 8080:80
+# 我發現要看一開始的設定，`helm install istio-ingressgateway istio/gateway -n istio-ingress` 要看當初建立在哪個 namespace 下面
+curl -I http://localhost:8080/productpage
+```
+
+這樣就有順利的啟動了
+
+```bash
+HTTP/1.1 200 OK
+server: istio-envoy
+date: Wed, 01 Oct 2025 03:33:11 GMT
+content-type: text/html; charset=utf-8
+content-length: 7712
+vary: Cookie
+x-envoy-upstream-service-time: 95
+```
+
+## Egress Gateway 實戰
+
+建立 ServiceEntry，那我們要先了解 ServiceEntry 又是什麼？他像是 Istio 的「補充通訊錄」，在 k8s 中 istio 會自己知道有哪些 service，那今天假如你有其他服務是需要連接到外部的 API 或是有其他的服務是在外部的，這樣就要透過 engress 的方法去將 ServiceEntry 加入，這樣 istio 就可以幫忙做到 traffic management 等等的機制
+
+```yaml
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: httpbin-ext
+spec:
+  hosts:
+    - httpbin.org
+  ports:
+    - number: 80
+      name: http
+      protocol: HTTP
+  resolution: DNS
+```
+
+> resolution 代表 Istio 在處理 ServiceEntry 的流量時，要怎麼決定 endpoint，通常有三個比較常使用：`NONE` 是沒有做 endpoint resolution，通常用於 direct IP 或一些不需要解析的情境或是一些 wildcards 的 hosts (\*.bar.com); `STATIC` 直接使用靜態配置的 endpoint IP; `DNS` 透過 DNS 來解析 host，取得實際的外部 IP，如果沒有指定的 endpoint，會 proxy 到指定的 DNS address，但 DNS 無法解析 Unix domain socket 的 endpoints (api.dropboxapi.com)
+
+建立 Egress Gateway
+
+```yaml
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: istio-egressgateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: egressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - httpbin.org
+```
+
+建立 VirtualService，並強制流量經過 Egress Gateway
+
+```yaml
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: route-via-egressgateway
+spec:
+  hosts:
+    - httpbin.org
+  gateways:
+    - mesh
+    - istio-egressgateway
+  http:
+    - match:
+        - port: 80
+        gateways:
+        - mesh
+        route:
+        - destination:
+            host: istio-egressgateway.istio-system.svc.cluster.local
+    - match:
+        - uri:
+            prefix: /get
+      route:
+        - destination:
+            host: httpbin.org
+            port:
+              number: 80
+```
+
+然後就可以測試呼叫外部的 api（httpbin.org）
+
+```bash
+kubectl exec -it <some-pod> -c istio-proxy -- curl -s http://httpbin.org/get
+```
+
+```json
+{
+  "args": {},
+  "headers": {
+    "Accept": "*/*",
+    "Host": "httpbin.org",
+    "User-Agent": "curl/8.5.0",
+    "X-Amzn-Trace-Id": "Root=1-68dca294-0d54337825d956b766aff9bb"
+  }, // AWS 內部做 request tracing
+  "origin": "103.122.117.**", // origin 顯示的是出口 IP
+  "url": "http://httpbin.org/get"
+}
+```
+
+## 總結
+
+今天就補充了前幾天沒講完的進出流量的控管，當然還有更多細節的管控可以去操作～
 
 ## Reference
 
-https://www.qikqiak.com/k8strain2/
-
-https://medium.com/jacky-life/%E5%9C%A8-k8s-%E4%BD%BF%E7%94%A8-rook-%E5%AE%89%E8%A3%9D-ceph-1999f52a6fb9
+https://istio.io/latest/docs/reference/config/networking/service-entry/
