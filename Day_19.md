@@ -6,6 +6,8 @@
 
 在 istio 中 Gateway 作為流量的出入口，有分為 Ingress Gateway 和 Egress Gateway，下面會簡單實作試著控制流量的進出～
 
+![Ingress Gateway 和 Egress Gateway](https://github.com/user-attachments/assets/e571cc3a-652d-41d4-9e76-9f0445d02926)
+
 ## Gateway
 
 Istio 的 Gateway 本質上是一個 envoy proxy 的 Deployment + Service，透過 Gateway + VirtualService CRD 控制流量進出，Ingress Gateway 通常部署在 istio-system namespace，以 LoadBalancer / NodePort / ClusterIP + port-forward 方式暴露，Egress Gateway 需要 Explicit Configuration，讓內部流量強制經過 Egress，再進行外部存取
