@@ -59,6 +59,8 @@ spec:
   resolution: DNS
 ```
 
+![multi-cluster](https://github.com/user-attachments/assets/86ab969f-d900-4045-bc8f-5f2f301a7d7e)
+
 ## Reference
 
 https://istio.io/latest/docs/ops/configuration/traffic-management/multicluster/
