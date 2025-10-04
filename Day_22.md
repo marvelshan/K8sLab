@@ -14,6 +14,8 @@
 
 WorkloadEntry 用於將一個單一、非 k8s 註冊到 istio mesh 中，其實可以想像成一個 pod 但是用不同的方式來表示，流量的流程為
 
+![WorkloadEntry](https://github.com/user-attachments/assets/649865e1-ba15-4ed6-98c7-87bd078576d7)
+
 ```
 Pod → VirtualService (指向 WorkloadEntry) → Istio Sidecar → VM → VM Service
 ```
