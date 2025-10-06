@@ -15,11 +15,12 @@ istioctl proxy-status
 ```
 
 輸出的結果會是
-![proxy-status output]()
+
+![proxy-status output](https://github.com/user-attachments/assets/740633f8-5dc7-4e0e-97cd-8453fa170fd3)
 
 假如任何一項有問題可以用這個指令來去查看他的狀況，但這邊要注意到假如使用的版本是在 `Istio 1.26` 之前就會是輸出跟文件上寫的方式一樣，而全部顯示為 4 (CDS,LDS,EDS,RDS) 就代表該 Pod 的 sidecar 已完全同步控制面下發的流量控制設定
 
-![proxy-status output document]()
+![proxy-status output document](https://github.com/user-attachments/assets/bcc483cc-8785-4a81-91b0-9e5287a32873)
 
 接著假如要查看流量的 configuration 可以使用以下的指令去查詢
 
