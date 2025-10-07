@@ -1,38 +1,38 @@
 ## K8S Lab Day_3
 
 今天會是貼人賽的第一天，有鑒於現在 ai 盛行，我請他幫我生成了 30 天的計畫，能不能順利地執行完畢是一回事，但是盡力地跟上他的實作吧～
-
-| 天數   | 題目                                                  | 實作重點                                                                                                                                        |
-| ------ | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Day 1  | 認識 Kubernetes 與微服務                              | 使用 `Kubespray`，啟動一個本地 K8s 叢集                                                                                                         |
-| Day 2  | Master Node 與 Worker Node                            | 用 `kubespray` 查看叢集狀態，部署一個簡單 Pod                                                                                                   |
-| Day 3  | Kubernetes 核心資源：服務、命名空間、儲存與配置管理   | ---                                                                                                                                             |
-| Day 4  | 使用 Nix 打造可重現的 Kubespray Kubernetes 叢集       | 使用 Nix 管理 Kubespray 相關配置可重現                                                                                                          |
-| Day 5  | Nix + Flake 你的開發環境 01 號機                      | 用 `flake.nix` 來了解實際運作                                                                                                                   |
-| Day 6  | Pod 調度與資源管理（Requests / Limits / QoS）         | 為 Pod 設定 CPU/Memory requests & limits，觀察 Scheduler 行為，模擬資源飽和與預留（LimitRange, ResourceQuota）                                  |
-| Day 7  | StatefulSet 與 PersistentVolume 基礎                  | 部署一個使用 PVC 的 StatefulSet（例如 MySQL），了解 PVC、PV、StorageClass 的聯動與綁定流程。                                                    |
-| Day 8  | 用 Nix 管理 Kubernetes manifests（Helm + Nix）        | 把你前面部署的 manifests 用 Nix 包裝（flake），示範如何用 Nix build 自動產生 YAML 並部署。                                                      |
-| Day 9  | GitLab 基礎與 Runner 設置                             | 在本地或 VM 安裝 GitLab CE（或使用 GitLab.com），註冊一個 Docker runner（或 k8s runner），測試簡單 pipeline（build → echo）。                   |
-| Day 10 | 用 GitLab CI + Nix 建置可重現的 CI Job                | 撰寫 `.gitlab-ci.yml`，在 pipeline 中使用 Nix（或 shell wrapper）執行 `nix build`、跑單元測試、上傳 artifact。                                  |
-| Day 11 | 存儲策略規劃：Ceph 基礎概念與選型（RBD/CephFS/RGW）   | 依需求決定 RBD、CephFS、RGW 的用途；寫下容量、PVC 類型、故障域（failure domain）與 CRUSH 規劃草案。                                             |
-| Day 12 | 在 Kubernetes 上部署 Rook Operator（Ceph）            | 使用 Rook Operator 部署 Ceph Cluster（最小 3 節點），觀察 ceph status，熟悉 CephCluster CRD。                                                   |
-| Day 13 | 建立 StorageClass 與測試 PVC（RBD / CephFS）          | 建 RBD 與 CephFS 的 StorageClass，申請 PVC 並掛載到 Pod，測試讀寫與故障恢復（模擬 OSD 下線）。                                                  |
-| Day 14 | RGW（S3 endpoint）部署與對象存儲測試                  | 啟動 RGW，使用 s3cmd 或 awscli 測試上傳/下載，做為 artifact / dataset 存放示範。                                                                |
-| Day 15 | Service Mesh 入門：選型與基本安裝（Istio 或 Linkerd） | 選擇 Service Mesh（建議先以 Istio 練習），在 K8s 安裝控制平面，部署示範 app 並啟用 sidecar，觀察流量。                                          |
-| Day 16 | Mesh 基本流量控制：mTLS、Policy、Timeout、Retry       | 啟用 mTLS，實作流量限速、timeout 與 retry 規則，驗證失敗重試與熔斷行為。                                                                        |
-| Day 17 | Canary / A/B 測試實作（流量分割）                     | 用 Service Mesh 做 Canary（例：10% 流量到 v2），撰寫示例配置並驗證流量比例與指標收集。                                                          |
-| Day 18 | 多模型 / 多路由場景：條件路由與灰度策略               | 實作 header 或路徑基礎的路由策略（小模型 vs 大模型），模擬成本節省策略（大多數請求用小模型）。                                                  |
-| Day 19 | CI/CD 與 Mesh 整合：在 pipeline 中自動化 Canary 部署  | 實作 GitLab CI job：build image → push → 更新 manifest，pipeline 執行時觸發 Canary 流量設定（或更新 Service 相關註解）。                        |
-| Day 20 | 觀測性（Metrics）設置：Prometheus + Grafana           | 部署 Prometheus Operator，抓取 K8s / Ceph / Mesh / app 指標，建立 Grafana Dashboard（GPU、Pod、Ceph IOPS）。                                    |
-| Day 21 | Logging 與 Tracing：EFK 或 Loki + Jaeger              | 部署 Fluentd/Fluent Bit 或 Loki 收集日誌，部署 Jaeger（或 OpenTelemetry Collector）做分布式追蹤，串接 Mesh 提供的 tracing header。              |
-| Day 22 | Ceph 深入：性能調校與故障模擬                         | 調整 Ceph 池（replication / erasure coding）、OSD Crush 規則，做 I/O 壓力測試，模擬 OSD/Node 故障觀察自癒流程。                                 |
-| Day 23 | 存儲快照與備份：Rook Ceph 與外部備援                  | 設定 Ceph snapshot，測試 PVC snapshot 與 restore，整合對象存儲做異地備援（例如 RGW -> 外部 S3 / 本地備份）。                                    |
-| Day 24 | 安全性硬化：K8s、Ceph、GitLab、Mesh 的安全實作        | 為 K8s 啟用 RBAC、NetworkPolicy；Ceph 確認 keyring 與用戶權限；GitLab 設定 MFA & protected branches；Mesh 設定授權策略（AuthorizationPolicy）。 |
-| Day 25 | 自動化擴充：HPA / VPA 與 Ceph 容量擴容流程            | 設定 Horizontal Pod Autoscaler、Vertical Pod Autoscaler，模擬流量增加並觀察自動擴縮；練習擴充 Ceph OSD 節點並觀察 rebalance。                   |
-| Day 26 | 性能測試與壓力測試（推理場景）                        | 使用工具（wrk、hey、locust 或自製 workload）壓測推理服務，觀察延遲分布、sidecar 開銷、Ceph I/O 瓶頸。                                           |
-| Day 27 | Chaos Engineering：模擬失敗與韌性演練                 | 使用 Chaos Mesh / LitmusChaos 做故障注入（Pod crash、node loss、network partition），驗證系統可用性與自癒能力。                                 |
-| Day 28 | MLOps 與模型管理：Artifact、Checkpoint、Registry      | 用 Ceph RGW 做模型 artifact 存放，設計模型版本命名與檢索流程，CI pipeline 自動上傳訓練 checkpoint 至 object store。                             |
-| Day 29 | 最後整合總驗收（End-to-End）與文件化                  | 做一次從 code -> CI -> build -> deploy -> Canary -> promote -> rollback 的完整驗收演練，產出系統設計文件、運維 runbook 與一份 30 天學習總結。   |
+| 天數 | 題目 |
+| ------ | ----------------------------------------- |
+| Day 1 | 認識 Kubernetes 與微服務 |
+| Day 2 | Master Node 與 Worker Node |
+| Day 3 | Kubernetes 核心資源：服務、命名空間、儲存與配置管理 |
+| Day 4 | 使用 Nix 打造可重現的 Kubespray Kubernetes 叢集 |
+| Day 5 | Nix + Flake 你的開發環境 01 號機 |
+| Day 6 | K8S 資源調度大作戰，從 QoS 防護網到 LimitRange 社區公約 |
+| Day 7 | Service Mesh 維運戰術，EVA 駕駛員的網路同步率指南 |
+| Day 8 | Istio 實戰開戰，從 Helm 部署到 Control Plane 的維運戰術 |
+| Day 9 | Istio 安全防線實戰，mTLS Identity 與 Authorization Policy 的跨命名空間存取控制 |
+| Day 10 | Istio 流量管理的戰術總覽與自動化 SSH 優化 |
+| Day 11 | istio 的流量管理的戰術下集|
+| Day 12 | Istio 流量戰術進階，使用 Envoy 實現速率限制與 Port Forward 快速測試 |
+| Day 13 | Istio 可觀測性戰術解鎖，從 Mixer 到 Telemetry API 的深度觀察 |
+| Day 14 | Istio 可觀測性進擊，自訂 Metrics 與 Prometheus 實戰 |
+| Day 15 | Istio Sidecar 將 Access Logs 輸出到 stdout 實戰 |
+| Day 16 | Istio Debug 實戰記錄 |
+| Day 17 | Istio Gateway 戰術：Ingress / Egress Gateway 的配置與安全防護 |
+| Day 18 | Istio Ingress Gateway 的進階流量管理：mTLS、TLS Termination 與 AuthorizationPolicy |
+| Day 19 | Istio 與 Multi-Cluster Mesh：跨叢集通訊與聯邦架構 |
+| Day 20 | Istio 與 VM Integration：將傳統 VM 納入 Mesh |
+| Day 21 | Istio 的 Health Checking |
+| Day 22 | Istio 與 CLI 整合：服務拓樸與流量觀察實戰 |
+| Day 23 | Istio WASM Plugin 戰術：撰寫與掛載自訂過濾器 |
+| Day 24 | Istio 與 Zero-Trust 架構：進階 AuthorizationPolicy 與 JWT 驗證 |
+| Day 25 | Istio 與 Sidecar 資源調優：效能最佳化、Envoy Proxy Tuning |
+| Day 26 | Istio 與高可用性：Control Plane / Data Plane 的 HA 與故障切換 |
+| Day 27 | Istio 與 CI/CD 整合：GitOps + Progressive Delivery (Canary / A/B Testing) 純 CLI 實戰 |
+| Day 28 | Istio 與 Chaos Engineering：故障注入與 Mesh 的韌性測試 |
+| Day 29 | Istio 與 Service Mesh Interface (SMI)：標準化 API 與跨 Mesh 整合 |
+| Day 30 | 成為 Istio 專家：Mesh 架構設計案例研究與最佳實踐總結 |
 
 ---
 
