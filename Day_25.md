@@ -12,6 +12,8 @@ Istio 自 1.12 起正式支援 WebAssembly 作為 extensibility 的機制，讓�
 
 但我們在回頭想想，為何要使用 WASM 呢？因為 envoy 是用 C++ 寫的，假如我們要去修改他的話，我們是必要使用 C++ 來去改他，原本是使用 Rust、Go 等等的開發者就被限制了。另外，假如我們直接去更動原生的 envoy，假如在我們不經意的地方有 bug 導致服務 crash，反而得不償失，所以我們需要 WASM 去做到 Isolation，並且 WASM 他有很好的優勢是他的 model 是很輕量的二進位檔，可以動態的去 update 它，不需要影響到 envoy
 
+![wasm plugin](https://github.com/user-attachments/assets/e351d121-7b81-44a0-81e1-62c0b5c662d2)
+
 首先我們要先去 flake.nix 把我們所需的環境安裝起來
 
 ```nix
