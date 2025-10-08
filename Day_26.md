@@ -85,32 +85,40 @@ kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/opa-envoy-p
 ## authz.rego
 package istio.authz
 
+# 預設 deny，除非符合 allow 的規則
 default allow := false
 
-# 允許健康檢查
+# 允許健康檢查的 GET 請求
 allow if {
     input.parsed_path[0] == "health"
     input.attributes.request.method == "GET"
 }
 
-# 根據角色授權
+# 根據使用者角色與權限授權
 allow if {
+    # 取得使用者角色
     some user_role in _user_roles[_user_name]
+    # 取得角色的權限清單
     some permission in _role_permissions[user_role]
+    # 比對 request method 與 path 是否符合角色權限
     permission.method == input.attributes.request.http.method
     permission.path == input.attributes.request.http.path
 }
 
+# 從 Authorization header 中解析出使用者名稱
 _user_name := parsed if {
     [_, encoded] := split(input.attributes.request.http.headers.authorization, " ")
     [parsed, _] := split(base64url.decode(encoded), ":")
 }
 
+# 定義每個使用者的角色
 _user_roles := {
     "alice": ["guest"],
     "bob": ["admin"],
 }
 
+
+# 定義每個角色對應的權限
 _role_permissions := {
     "guest": [{"method": "GET", "path": "/productpage"}],
     "admin": [
