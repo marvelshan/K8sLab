@@ -73,6 +73,8 @@ curl -v http://$INGRESS_IP/api/public
 
 接著我們要來介紹 OPA，為什麼要用 OPA？雖然 AuthorizationPolicy 可以依據來源與 JWT claim 做到 fine-grained control，但還是受限於 yaml 的規格，沒辦法進行太多的邏輯判斷，這時候我們就可以使用到 `Open Policy Agent` 把邏輯抽象到 `Rego` 這個語法當中，達到可以動態調整授權的策略
 
+![opa](https://github.com/user-attachments/assets/bb73a644-d7a1-46e0-ab9d-e3e73c20afae)
+
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/opa-envoy-plugin/main/examples/istio/quick_start.yaml
 ```
