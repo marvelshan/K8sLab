@@ -14,6 +14,8 @@
 kubectl exec -it <pod> -c istio-proxy -- pilot-agent request GET /stats | head -20
 ```
 
+![pilot-agent request GET /stats](https://github.com/user-attachments/assets/b6bf5d68-bff1-49f2-a8cb-2e08b91a5e5a)
+
 其中有的資訊有 `XDS (Discovery Service)` 配置版本資訊、`XDS gRPC` 連接狀態、`Circuit Breakers` 確認是否過載，假如目前都是 `0` 的話就是都還是沒有超過限制的狀態
 
 ## 2. 調整 sidecar 的 Requests & Limits
@@ -97,7 +99,7 @@ func TestValidateConnectionPool(t *testing.T) {
 
 ## 總結
 
-抓抓頭發現，好像有點複雜了，這些設定在大部分的狀況下還是不太會使用到啦，但主要是我們要在需要的時候發會用場，透過網路上的 source code 可以讓我們更了解設計者的思考邏輯和運作，以前很多前輩都說：『要找文件？去看測試』，就來發揮這個用處啦，當然要去限制到我們的 sidecar 還是有很多種方法，但今天就大概介紹到這吧，在抓頭頭髮都抓沒了ＱＱ
+抓抓頭發現，好像有點複雜了，這些設定在大部分的狀況下還是不太會使用到啦，但主要是我們要在需要的時候發會用場，透過網路上的 source code 可以讓我們更了解設計者的思考邏輯和運作，以前很多前輩都說：『要找文件？去看測試』，就來發揮這個用處啦，當然要去限制到我們的 sidecar 還是有很多種方法，但今天就大概介紹到這吧，再抓頭頭髮都抓沒了ＱＱ
 
 ## Reference
 
