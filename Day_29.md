@@ -10,6 +10,8 @@
 
 可以看到下面這張圖，當使用者透過 kubectl apply 或 API 請求建立資源時，會經歷下面的階段，k8s 提供了兩個 webhook，MutatingAdmissionWebhook 是用於修改請求（例如自動注入容器），ValidatingAdmissionWebhook 是用於驗證請求是否合法（例如檢查配置）
 
+![Admission Webhook](https://github.com/user-attachments/assets/bf0939a0-6236-4c3b-9588-d1aaa3b5fe7b)
+
 ## 那 istio 又跟 Admission Webhook 的關係？
 
 Istio 在 Mesh 內使用 Mutating Webhook 自動將 Envoy Sidecar 注入至 Pod 中，Validating Webhook 來驗證 Istio 資源（如 VirtualService、DestinationRule）的正確性，而這兩個 webhook 都是由 control plane Istiod 來託管
