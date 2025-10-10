@@ -28,7 +28,7 @@
 | Day 23 | Istio WASM Plugin 戰術：撰寫與掛載自訂過濾器 |
 | Day 24 | Istio 與 Zero-Trust 架構：進階 AuthorizationPolicy 與 JWT 驗證 |
 | Day 25 | Istio 與 Sidecar 資源調優：效能最佳化、Envoy Proxy Tuning |
-| Day 26 | Istio 與高可用性：Control Plane / Data Plane 的 HA 與故障切換 |
+| Day 26 | Istio 驗證錯誤與 Webhook 問題排查 |
 | Day 27 | Istio 與 Chaos Engineering：故障注入與 Mesh 的韌性測試 |
 | Day 28 | Istio 與 Service Mesh Interface (SMI)：標準化 API 與跨 Mesh 整合 |
 | Day 29 | Istio 的漏洞案例觀察：Envoy CVE-2024-53270 |
