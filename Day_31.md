@@ -10,9 +10,11 @@
 
 這個漏洞的編號是 CVE-2024-53270，這個 CVE 的意思是 Common Vulnerabilities and Exposures，對於漏洞有一個評分 - Common Vulnerability Scoring System, CVSS，它是由美國國家基礎建設諮詢委員會經過一系列的變更和演化最後發展出這套漏洞的標準，評分是 0.0-10.0 分數越高危險程度越高，假如有興趣可以去看一下他的文件，這個漏洞的評分是 7.5，其實算是一個蠻高的評分，這個是發生在配置了某個 load-shed 點（`http1_server_abort_dispatch`）時，如果 downstream 在某個時刻被 reset，而 Envoy 在處理 overload 時假設 active request 一定存在，可能會 dereference 空指標導致進程 crash。這個的修補在 1.29.12 / 1.30.9 / 1.31.5 / 1.32.3（以及之後版本），使用這些或更新的 Envoy 版本可完全解決。若不能立即升級，官方建議暫時**禁用 `http1_server_abort_dispatch` load-shed 點**或把對應 threshold 設很高作為應急方案
 
+![漏洞](https://github.com/user-attachments/assets/9cd690a1-cb94-45df-a711-d95be05a4708)
+
 ## 技術背景
 
-Envoy 在 high memory/conn 情況下會啟用 _overload manager_，可以在不同生命週期（例如接收 header、建立連線、dispatch 請求）放置「load-shed points」來決定哪些請求或連線要被放棄或回覆本地錯誤，以保護系統不中斷服務。但如果程式在某個特殊 race 條件下（例如 downstream 剛好 reset 了 stream）呼叫了假設「active request 一定存在」的 code path，就會出現 null pointer 並導致 envoy 進程當掉。CVE-2024-53270 就是在 `http1_server_abort_dispatch` 這個 load-shed 點的處理路徑出現了這種假設，當 downstream reset 與 upstream H/2 reset 發生交互時就會觸發崩潰。
+Envoy 在 high memory/conn 情況下會啟用 _overload manager_，可以在不同生命週期（例如接收 header、建立連線、dispatch 請求）放置「load-shed points」來決定哪些請求或連線要被放棄或回覆本地錯誤，以保護系統不中斷服務。但如果程式在某個特殊 race 條件下（例如 downstream 剛好 reset 了 stream）呼叫了假設「active request 一定存在」的 code path，就會出現 null pointer 並導致 envoy 進程當掉。CVE-2024-53270 就是在 `http1_server_abort_dispatch` 這個 load-shed 點的處理路徑出現了這種假設，當 downstream reset 與 upstream H/2 reset 發生交互時就會觸發崩潰
 
 ## 為什麼 Istio 使用時要在意？
 
@@ -121,6 +123,12 @@ kubectl get configmap -n istio-system | grep bootstrap
 ## 緩解與修補
 
 官方建議的優先順序，不管就是升級就對了！但還是要確認升級的版本有沒有更新，但一定有目前正在使用但又好像沒什麼問題的時候，就要避免使用 / 移除 `http1_server_abort_dispatch` load-shed（不要在自訂 bootstrap 或 EnvoyFilter 中啟用它），或將對應的閾值設得很高，使 load-shed 幾乎不會觸發（但這可能削弱 overload manager 的保護效果），也可以在 ingress 邊界做好 rate-limiting、WAF 規則或 layer-7 防護，減少能觸發特殊 race 的外部流量模式，建立監控告警（envoy 重啟、sidecar crash、5xx ratio 顯著上升）以便快速回應等等，但這種有問題的還是儘速的更新最妥
+
+## 總結
+
+今天來講到這個漏洞的地方，我自己是覺得很酷，其實我們使用的工具一直都會有這種小細節是我們需要觀察的，我們可以透過這種過去的案例來觀察出假如系統出問題，我們可以先從哪邊開始排查，但是問題千千萬萬種，一定有我們不知道的，所以多看多了解一定會變強的XD，或是把這種漏洞當故事書看也蠻有趣的，看看為何這種漏洞會出現，然後來案例分析也是不錯的體驗～～然後下面是這個漏洞修正的 github，有興趣也可以看一下他是怎麼修正的～
+
+![漏洞修正](https://github.com/user-attachments/assets/ea207e8d-9c9c-4884-b525-2d3c396dbbbc "漏洞修正 github")
 
 ## Reference
 
