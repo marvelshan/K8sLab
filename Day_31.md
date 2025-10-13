@@ -83,7 +83,7 @@ TEST_P(LoadShedPointIntegrationTest, Http1ServerDispatchAbortShedsLoadWhenNewReq
 
 ---
 
-## 回頭檢查版本
+## 回頭來檢查版本，看看現在是不是有遇到
 
 1. 檢查 Istio / Envoy 版本（先確認是否受影響）
 
