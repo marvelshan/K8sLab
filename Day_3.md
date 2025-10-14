@@ -29,10 +29,10 @@
 | Day 24 | Istio 與 Zero-Trust 架構：進階 AuthorizationPolicy 與 JWT 驗證 |
 | Day 25 | Istio 與 Sidecar 資源調優：效能最佳化、Envoy Proxy Tuning |
 | Day 26 | Istio 驗證錯誤與 Webhook 問題排查 |
-| Day 27 | Istio 與 Chaos Engineering：故障注入與 Mesh 的韌性測試 |
+| Day 27 | Istio 與 Kubernetes Admission Webhook：動態注入與驗證機制解析 |
 | Day 28 | Istio 與 Service Mesh Interface (SMI)：標準化 API 與跨 Mesh 整合 |
 | Day 29 | Istio 的漏洞案例觀察：Envoy CVE-2024-53270 |
-| Day 30 | 未來 Istio 對我有用嗎？那 AI 呢？ |
+| Day 30 | 為什麼你的 AI Workload 仍然需要 Service Mesh |
 
 ---
 
