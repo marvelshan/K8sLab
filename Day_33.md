@@ -2,6 +2,8 @@
 
 # Pod 生命週期
 
+<img width="1229" height="1051" alt="image" src="https://github.com/user-attachments/assets/f72dbd23-0cf5-4572-ab9b-8d2146420507" />
+
 pod 的生命週期是從他被排程到節點上開始直到被終止為止的過程，這個過程是被嚴格按照順序進行，必且確保都是處於正確的狀態
 
 ## 1. Init Container
@@ -23,6 +25,8 @@ pod 的生命週期是從他被排程到節點上開始直到被終止為止的�
 在 k8s 運行 ai workload 一直都是一個很大的挑戰，在我昨天所提到的 ai 會需要判斷他的資源使用率才能達到最好的成本考量，也有提到因為他的推理請求每個都相當的不同，像是他的記憶體消耗量大，有時候會需要使用到動態載入 Lora Low-Rank Adapter，在平常的服務，我們常常使用 ingres、gateway api、service mesh 等等的 L7 的流量控制，但這些往往對 ai 不理想，所以 Gateway API Inference Extension 是要來解決這個問題，讓 gateway 能理解 ai 的推理，然後比較聰明的方式去使用 GPU 的資源
 
 ## Gateway API Inference Extension 的設計
+
+<img width="1298" height="602" alt="截圖 2025-10-15 下午3 10 50" src="https://github.com/user-attachments/assets/2c5681c7-1e34-43e0-9f5d-27af8d261ec0" />
 
 ### 1. InferenceModel
 
