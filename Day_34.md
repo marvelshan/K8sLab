@@ -6,6 +6,8 @@
 
 想說最近要把履歷打開來了，要開始複習前以前所使用過的技術，順便來繼續鑽研有沒有更有趣的做法可以應用
 
+<img width="796" height="398" alt="image" src="https://github.com/user-attachments/assets/729a078e-1636-4bac-a3d1-e6738ed76e79" />
+
 ## CICD 流程
 
 ```
@@ -229,7 +231,14 @@ stage('Progressive Rollout') {
 
 ## Argo Rollouts
 
+<img width="1280" height="710" alt="image" src="https://github.com/user-attachments/assets/f2d51d4d-c831-4425-8b15-dfd57d0760f1" />
+
 Argo CD 本身主要負責 GitOps 同步，也就是讓 cluster 的狀態與 Git 版本保持一致，但當我們想要做到藍綠部署、自動回滾這類更進階的 Progressive Delivery 時，單靠 Deployment 資源就不太夠用了，這時候就可以使用 Argo Rollouts，Argo Rollouts 是一個 k8s controller，擴充原本的 Deployment，做到更精細的 traffic management，想當然他也是一個 CRD，每個階段都能設定 pause，讓團隊觀察指標，如果某階段監控失敗（例如延遲上升、錯誤率飆高），可以自動回滾
+
+<img width="390" height="263" alt="image" src="https://github.com/user-attachments/assets/6776aee5-a078-4612-b6c7-c8fa7f481676" />
+
+<img width="1024" height="363" alt="image" src="https://github.com/user-attachments/assets/984878c2-6d84-4f41-ba14-5e1cba28d75f" />
+
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -367,6 +376,8 @@ spec:
 
 雖然 Argo Rollouts 本身可以操作 k8s Service 的 selector，但若要在 `active 流量`與`preview 流量`之間做更 fine-grained 的流量控制，像是只讓 5% 的真實使用者流量先導入新版、根據 header 或 cookie 導向不同版本、自動監測延遲、錯誤率、流量峰值後再決定是否 promote 等等的，都需要 Istio 的 VirtualService + DestinationRule
 
+<img width="867" height="605" alt="image" src="https://github.com/user-attachments/assets/23b9541a-fcb3-4718-bd96-16973da1c6df" />
+
 ## 部署方式與比較
 
 這時候講到部署，勢必要比較一下各種的部署方式吧，才不愧發明這些部署方式還有那時候遇到挑戰的先人
@@ -382,6 +393,8 @@ spec:
 ## 總結
 
 看完以上的部署方式，覺得自己有點像是拿著各種工具來面對各種實際的狀況，每個工具都有他實用的地方，組裝起來可以打片天下無敵手的感覺，感覺啦ＸＤ，原本沒想到要寫那麼多，默默的也把這些做完，看著前方的海，在這邊敲鍵盤真的是很爽ＸＤ
+
+![IMG_1250](https://github.com/user-attachments/assets/86901745-567e-4b2e-9291-8e3c68299f7a)
 
 ## Reference
 
