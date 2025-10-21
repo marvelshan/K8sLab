@@ -10,6 +10,8 @@
 
 用途：顯示 kernel ring buffer 中的訊息，包含開機、硬體偵測、網路卡、磁碟、USB 事件等。這是排查硬體或驅動問題的第一個好幫手，實際應用場景為插入一個 USB 想確認他是否有被偵測到、系統無法掛載磁碟，需要查看他的原因、網路介面異常時檢查驅動的訊息
 
+<img width="629" height="467" alt="image" src="https://github.com/user-attachments/assets/b36ab110-3ed6-42e8-ab39-10c2f5998da4" />
+
 ```bash
 # 顯示最近的 kernel log
 dmesg | tail
