@@ -49,3 +49,36 @@ sudo netplan apply
 ```bash
 ps aux | grep nix
 ```
+
+## 插入網卡
+
+```bash
+ip addr
+```
+
+先查詢網卡的名稱和 Mac address
+
+```bash
+3: enp*s0: <BROADCAST,MULTICAST> mtu 1442 qdisc noop state DOWN group default qlen 1000
+    link/ether fa:16:3e:80:71:** brd ff:ff:ff:ff:ff:ff
+```
+
+然後將 enp\*s0 加入設定
+
+```bash
+sudo vim /etc/netplan/50-cloud-init.yaml
+```
+
+```yaml
+enp*s0:
+  dhcp4: true
+  match:
+    macaddress: fa:16:3e:80:71:** # 填寫 enp*s0 的 Mac address
+  set-name: enp*s0
+```
+
+接著套用上去就可以了
+
+```bash
+sudo netplan apply
+```
