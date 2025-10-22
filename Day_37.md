@@ -151,14 +151,23 @@ sudo ip netns add netns1
 
 ip netns list
 
+ip link list
+# Output:
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+2: enp3s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP mode DEFAULT group default qlen 1000
+    link/ether fa:16:3e:e7:e6:e9 brd ff:ff:ff:ff:ff:ff
+3: enp4s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1442 qdisc fq_codel state UP mode DEFAULT group default qlen 1000
+    link/ether fa:16:3e:80:71:41 brd ff:ff:ff:ff:ff:ff
+
 # 進入 namespace 跑 bash
-nsenter --net=/run/netns/netns0 bash
+sudo nsenter --net=/run/netns/netns0 bash
 
 ip link list
 
-# 輸出應只顯示
-
-
+# 輸出應只顯示，就跟原本的有差異
+1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
 
 # 然後可以跳出
 exit
@@ -214,7 +223,20 @@ sudo iptables -t nat -A PREROUTING -p tcp --dport 8080 -j DNAT --to-destination 
 sudo iptables -A FORWARD -p tcp -d 192.168.1.2 --dport 80 -j ACCEPT
 ```
 
-最後這實現 Docker 的 -p 8080:80：外部連主機 8080，轉到容器 80
+最後這實現 Docker 的 -p 8080:80：外部連主機 8080，轉到容器 80，但假如要操作這個實驗的話還是要在 `netns0` 這個 ns 啟動 port 為 80 的服務 `curl http://localhost:8080` 才有效喔
+
+```bash
+# 也可以再進入到 ns 中查看
+sudo nsenter --net=/run/netns/netns0 bash
+
+ip link list
+
+# Output
+1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+6: veth0@if5: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default qlen 1000
+    link/ether fe:de:63:5f:37:7d brd ff:ff:ff:ff:ff:ff link-netnsid 0
+```
 
 看到這邊也實作完了 docker bridge 的原理啦！看圖可以更清楚呦！
 
