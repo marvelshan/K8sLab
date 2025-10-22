@@ -139,3 +139,148 @@ https://ithelp.ithome.com.tw/articles/10305163
 https://ithelp.ithome.com.tw/articles/10305163
 
 https://www.docker.com/blog/understanding-docker-networking-drivers-use-cases/
+
+# PID 1 的重要性、Signals 與關閉機制
+
+## 前言
+
+今天時間比較多，好像可以把前幾天有看到的東西也把它寫一下，話說現在有 ai 可以整理資料之後，閱讀的速度真的差很多，可以整理的實驗也快很多，那剛剛是在網路的地方去著手，那接著就繼續往 docker 的生命週期去了解，使用者常忽略但至關重要的部分，尤其在生產環境中，理解這些能避免意外的中斷或資源洩漏，會從 CMD 執行模式開始，逐步解釋 signals、關閉命令的行為，並介紹 cgroup freezer 子系統作為進階資源管理工具
+
+## PID 是什麼？
+
+在 Linux 系統中，每個執行中的「程序（Process）」都有一個唯一的「Process ID, PID」。他是系統中第一個被啟動的進程，在一般 Linux 系統中是 systemd 或 init，所有其他進程（PID 2、3、4...）都是由 PID 1 啟動或衍生的。當啟動一個 Docker 容器時，`docker run --name myapp nginx` 這個容器的「第一個進程」就是 nginx，在容器內部的世界裡 nginx 的 PID = 1，它就是這個容器裡的「init process」
+
+這時候我們就要了解到 Zombie Process，在 Linux 中，父進程需要負責「回收」子進程的資源，若 PID 1 不做這件事，容器內會出現大量的 zombie process，一般的應用程式（如 node、python）不會自動做這件事
+
+而容器中止時，也就是 PID 1 的進程結束時，只要 PID 1 結束，整個容器就會被 Docker 判定為「已停止」
+
+## CMD 執行模式的差異：Exec vs Shell
+
+在 Dockerfile 中，CMD 指令定義容器啟動時執行的命令，但它的執行方式有兩種：exec mode 和 shell mode。這不僅影響 PID 1 的身分，還會影響容器如何處理信號和關閉
+
+### Exec Mode
+
+它使用 JSON 陣列格式，這裏直接執行 sleep 1000，容器中的 PID 1 就是 sleep 進程。透過 docker top 或 docker ps 查看，你會看到 PID 1 是 sleep
+
+```text
+CMD ["sleep", "1000"]
+```
+
+### Shell Mode
+
+使用字串格式，這透過 `/bin/sh -c` 執行，所以 PID 1 是 `/bin/sh -c 'sleep 1000'`，docker ps 會顯示類似 "/bin/sh -c 'sleep 1…"。這多了一層 shell 包裝
+
+```text
+CMD sleep 1000
+```
+
+### 差異影響與使用場景
+
+這兩種模式的主要差異在於容器內進程的啟動方式與信號傳遞機制，由於 Shell Mode 會多經過一層 `/bin/sh -c`，因此信號傳遞會有差異，在 Exec Mode 中，Docker 送出的信號（例如 SIGTERM、SIGINT）會直接傳給 PID 1 的應用程式（如 sleep、python、nginx），這樣應用可以正確接收並處理信號，進行 graceful shutdown; 在 Shell Mode 中，信號會先傳給 `/bin/sh`，而 `/bin/sh` 不一定會把信號轉發給子進程，因此常見情況是應用程式收不到關閉信號，導致容器停止時需等超時再被 SIGKILL 強制殺死
+
+### PID 1 的兩個責任
+
+1. 回收孤兒/ zombie 子進程
+
+   Linux 規定 PID 1 需要呼叫 wait() 來回收 zombie
+
+   如果 PID 1 是 sleep（Exec Mode），sleep 本身不會呼叫 wait() → 無法回收 zombie。
+
+   如果 PID 1 是 /bin/sh -c（Shell Mode），大部分 shell 會有簡單的 wait 機制 → 可以回收 zombie。
+
+2. 信號轉發 / graceful shutdown
+
+   Docker 對容器發送信號（如 SIGTERM）時，會傳給 PID 1
+
+   Exec Mode：PID 1 就是你的應用程式本身，應用程式可以直接接收信號並處理 → graceful shutdown 正常。
+
+   Shell Mode：PID 1 是 /bin/sh -c，shell 可能不會把 SIGTERM 傳給子進程（你的應用程式），所以應用可能收不到信號 → 容器會等超時再被 SIGKILL。
+
+兩者在不同需求上各有利弊，如果關心 zombie 回收 → Shell Mode 會比較穩定，如果關心應用程式能正確收到 SIGTERM → Exec Mode 是最佳選擇
+
+所以在生產環境，常用 Exec Mode + init wrapper，像是 tini，tini 會作為 PID 1 負責回收 zombie、轉發信號，應用程式直接作為子進程運行，信號可以正常接收，容器也能 graceful shutdown，這真的就兩全其美了呀～
+
+```dockerfile
+ENTRYPOINT ["tini", "--"]
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+## Linux Signals
+
+Signals 是 Linux 進程間的非同步通知機制，用來中斷、終止或暫停進程。每個 signal 有預設行為，但可以被忽略、捕捉或自訂處理，像是有幾種例子
+
+- Ctrl+C 送出 SIGINT (Interrupt from keyboard)
+- kill [pid] 預設送 SIGTERM (Termination signal)
+- kill -9 [pid] 送 SIGKILL (Kill signal)
+
+### 那容器關閉機制與 PID 1 的關係為何呢？
+
+Docker 使用 signals 關閉容器，PID 1 是接收者，而這反映 PID 1 的特殊性，它是 namespace 的 init process，終止它會導致 kernel SIGKILL 其他進程
+
+docker stop 會送 SIGTERM 給 PID 1，若 PID 1 處理並退出，容器關閉，否則 10 秒後送 SIGKILL（可改 `--time=5`）
+
+docker kill 直接送 SIGKILL（可改 `--signal`）快速關閉，無 graceful stop
+
+docker rm -f 對運行容器送 SIGKILL 後移除
+
+所以 PID 1 真的很重要！它需回收 zombie、處理 SIGTERM 做 graceful stop，並轉發給 child processes，Shell mode 常讓 `/bin/sh` 當 PID 1，導致問題，所以推薦 exec mode 或使用 tini 等 init 工具
+
+## Cgroup Freezer
+
+Cgroup freezer 是 linux 核心的一個子系統，用來凍結/解凍一組 task，讓管理員可以根據需求調度機器，他特別適合使用在 batch job management，像是在 HPC（高效能運算）cluster 調度整個 cluster 的存取權，freezer 使用 cgroups 定義要啟動或停止的任務提供一個機制來批量管理這些 task
+
+另一個重點是 checkpointing 運行中的 task group，freezer 讓 checkpointing code 取得 consistent image，透過強制 cgroup 中的任務進入 quiescent state，一但任務停止，他的任務可以造訪 `/proc` 或呼叫和新介面來收集資訊，checkpointing task 可以在發生可恢復錯誤時重新啟動，也允許任務遷移到 cluster 的其他節點，複製收集的資訊到心節點並在那裡重新啟動
+
+### 為什麼不直接用 SIGSTOP 和 SIGCONT？
+
+序列化的 SIGSTOP 和 SIGCONT 信號不總是足夠用來在用戶空間停止/恢復任務。這些信號對要凍結的任務是可觀察的，SIGSTOP 無法被捕捉、阻擋或忽略，但可以被等待或 ptrace 的父任務看到、SIGCONT 更不適合，因為它可以被任務捕捉
+
+### Cgroup Freezer 的階層結構
+
+凍結一個 cgroup 會凍結屬於該 cgroup 和所有後代 cgroups 的任務，每個 cgroup 有 self-state 和 parent-state，只有兩個狀態都是 THAWED（解凍）時，cgroup 才是 THAWED，為何這樣設計呢？如果 parent 凍結，而 child 自己設為 THAWED，實際上仍然不能運行，這樣的設計保證了上層 cgroup 的控制權優先，還有管理員或容器 runtime（如 Docker、systemd）凍結一個 cgroup，就可以保證整個子樹的所有任務都被暫停，不必逐一控制每個子 cgroup，像是 Docker 暫停容器時會使用 freezer cgroup，將容器整棵進程樹凍結、systemd 進行服務管理時，想暫停整個服務（包括所有子進程和子 cgroup）以釋放資源或進行 checkpoint/restore
+
+```text
+* Examples of usage :
+
+   # mkdir /sys/fs/cgroup/freezer
+   # mount -t cgroup -ofreezer freezer /sys/fs/cgroup/freezer
+   # mkdir /sys/fs/cgroup/freezer/0
+   # echo $some_pid > /sys/fs/cgroup/freezer/0/tasks
+
+to get status of the freezer subsystem :
+
+   # cat /sys/fs/cgroup/freezer/0/freezer.state
+   THAWED
+
+to freeze all tasks in the container :
+
+   # echo FROZEN > /sys/fs/cgroup/freezer/0/freezer.state
+   # cat /sys/fs/cgroup/freezer/0/freezer.state
+   FREEZING
+   # cat /sys/fs/cgroup/freezer/0/freezer.state
+   FROZEN
+
+to unfreeze all tasks in the container :
+
+   # echo THAWED > /sys/fs/cgroup/freezer/0/freezer.state
+   # cat /sys/fs/cgroup/freezer/0/freezer.state
+   THAWED
+```
+
+以上範例展示如何使用 cgroup freezer 子系統控制進程：首先建立 freezer cgroup 並將指定進程加入，透過讀寫 freezer.state 可以暫停（FROZEN）、解凍（THAWED）或查看（THAWED/FREEZING/FROZEN）整個 cgroup 的所有任務，達到容器或進程凍結與解凍的效果
+
+## 小傑
+
+今天看到了 PID 和 cgroup freezer，其實平常是不會直接操作到 cgroup freezer，他是比較在背景發生的場景，當你執行 `docker pause <container>` 時，Docker 會透過 cgroup freezer 將該容器內的所有進程 FROZEN，暫停 CPU 調度，容器內進程就像被冰凍一樣，不會執行任何 code，執行 `docker unpause <container>` 時，Docker 會將 cgroup 狀態改為 THAWED，讓所有進程恢復運作，在一些 high-level Docker 或容器管理平台，可能會用 freezer 來暫停不活躍的容器或進程，節省 CPU 或暫時隔離進程，其實我們也可以看到圖片的 docker 生命週期，就可以知道今天所說的的細節環節，雖然在途中沒有講到，但已經可以從其中的流程了解到了細節的運作了～～
+
+## Reference
+
+https://kernel.meizu.com/2024/07/12/sub-system-cgroup-freezer-in-Linux-kernel/
+
+https://ithelp.ithome.com.tw/articles/10304865
+
+https://blog.miniasp.com/post/2021/07/09/Use-dumb-init-in-Docker-Container
+
+https://www.kernel.org/doc/Documentation/cgroup-v1/freezer-subsystem.txt
+
+https://www.threads.com/@willh_tw/post/DPXjEPaDvoV/%E5%AD%B8%E7%BF%92-docker-%E5%AE%B9%E5%99%A8%E7%94%9F%E5%91%BD%E9%80%B1%E6%9C%9F%E7%AE%A1%E7%90%86%E7%9A%84%E5%AE%8C%E6%95%B4%E6%8C%87%E5%8D%97%E4%BE%86%E4%BA%86%E9%9B%96%E7%84%B6-docker-run-%E6%8C%87%E4%BB%A4%E8%83%BD%E5%BF%AB%E9%80%9F%E5%95%9F%E5%8B%95%E5%AE%B9%E5%99%A8%E4%BD%86%E5%9C%A8%E5%AF%A6%E9%9A%9B%E6%87%89%E7%94%A8%E5%A0%B4%E6%99%AF%E4%B8%AD%E9%96%8B%E7%99%BC%E8%80%85%E5%BE%80%E5%BE%80%E9%9C%80%E8%A6%81%E6%9B%B4%E7%B2%BE%E7%B4%B0%E7%9A%84%E6%8E%A7%E5%88%B6%E8%83%BD%E5%8A%9Bivan-vel
