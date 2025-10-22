@@ -201,7 +201,7 @@ iptables -A FORWARD -p tcp -d 192.168.1.2 --dport 80 -j ACCEPT
 
 看到這邊也實作完了 docker bridge 的原理啦！看圖可以更清楚呦！
 
-<img width="2405" height="1472" alt="image" src="https://github.com/user-attachments/assets/dd935fd5-a935-4dc0-a1ca-b8833c9bcc8d" />
+<img width="2000" height="1136" alt="image" src="https://github.com/user-attachments/assets/31287771-08e0-4d79-90b8-cc03214270cf" />
 
 ## Reference
 
