@@ -62,6 +62,8 @@ Docker 的網路系統是 pluggable 的，也就是說它透過不同的 Network
 
 如果在建立容器時沒有特別指定網路，Docker 就會使用 Bridge 模式。這是最常見的網路模式，適合容器之間在同一台主機上互相通訊的場景，容器有自己的私有 IP，對外連線透過宿主 NAT，通常是 Web 應用 + 資料庫在同一台主機上
 
+<img width="1154" height="1076" alt="image" src="https://github.com/user-attachments/assets/e6ac3aa0-8a0e-41c7-82ca-76370150063e" />
+
 ### Host 共享宿主的網路堆疊
 
 使用 Host 模式時，容器與宿主主機共用相同的網路環境，容器不再擁有獨立的 IP，而是直接使用宿主的網卡與 port，優點是效能佳、延遲低，但缺點是無網路隔離，可能 port 衝突，通常應用在需要監控代理、metrics exporter
@@ -70,6 +72,8 @@ Docker 的網路系統是 pluggable 的，也就是說它透過不同的 Network
 
 Overlay 網路用於連接多個 Docker Daemon 讓容器或 Swarm 服務能夠跨節點通訊，而不需設定 OS 層級的路由，主要使用在 Swarm、k8s，優點是簡化多節點部署，場景是建立微服務集群時
 
+<img width="573" height="299" alt="image" src="https://github.com/user-attachments/assets/9e9cc771-fe41-408a-b674-47958b334778" />
+
 ### IPvlan 控制 IP 與 VLAN 的進階方案
 
 IPvlan 提供使用者對 IPv4/IPv6 網址的完整控制，VLAN 模式則可進一步實現 Layer 2 VLAN 標記與 L3 路由，適合需要與底層實體網路深度整合的場景，場景是在大型企業網路、資料中心
@@ -77,6 +81,8 @@ IPvlan 提供使用者對 IPv4/IPv6 網址的完整控制，VLAN 模式則可進
 ### Macvlan 讓容器看起來像實體機器
 
 Macvlan 允許你給每個容器分配獨立的 MAC 位址，讓容器在網路上看起來就像獨立的實體主機，Docker 會根據 MAC 位址來路由封包，主要應用在遷移 legacy app 或需要實體化網路識別的應用
+
+<img width="1030" height="1048" alt="image" src="https://github.com/user-attachments/assets/f2ea19c5-0192-4cb9-a2d9-1d5ef70b51ff" />
 
 ### None 完全隔離的網路模式
 
@@ -131,3 +137,5 @@ https://docs.docker.com/engine/network/drivers/
 https://ithelp.ithome.com.tw/articles/10305163
 
 https://ithelp.ithome.com.tw/articles/10305163
+
+https://www.docker.com/blog/understanding-docker-networking-drivers-use-cases/
