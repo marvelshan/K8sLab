@@ -130,6 +130,77 @@ docker network create --ipv6 --subnet 2001:db8:1234::/64 my-net
 docker network create --ipv6 --ipv4=false v6net
 ```
 
+### Docker Bridge 的原理
+
+我們一直在探究網路，勢必要了解底層的原理吧！其實也都是來自 Linux 標準工具的組合，如 network namespaces、virtual Ethernet devices (veth)、virtual network switches (bridge)、IP routing 和 network address translation (NAT)，我們可以基於 Linux kernel 的網路虛擬化來了解這些容器底層的網路運作
+
+- Network namespaces (netns)：虛擬化網路堆疊，讓每個容器有獨立網路環境，包括裝置、路由和防火牆規則
+- Virtual Ethernet devices (veth)：虛擬乙太網路裝置，用來連接容器和主機
+- Virtual network switches (bridge)：虛擬交換器，連接多個 veth，讓容器互相通訊
+- IP routing 和 NAT：路由讓流量轉發，NAT 讓容器連外網並隱藏內部 IP
+
+### 開始吧～
+
+#### 1. 使用 Network Namespaces 建立容器網路隔離
+
+```bash
+# Docker Bridge 的基礎是 network namespace (netns)，它複製網路堆疊，讓容器有獨立路由、防火牆和裝置
+
+ip netns add netns0
+
+ip netns list
+
+# 進入 namespace 跑 bash
+nsenter --net=/run/netns/netns0 bash
+```
+
+#### 2. 建構 Bridge 網路，讓容器互相通訊
+
+```bash
+# Docker 的 bridge (如 docker0) 是虛擬交換器，連接容器的 veth 裝置
+ip link add name bridge0 type bridge
+ip link set bridge0 up
+
+# 為容器建立 veth pair (一端在容器，一端連 bridge)：假設有 netns0，建立 veth
+ip link add veth0 type veth peer name veth0-br
+ip link set veth0 netns netns0
+ip link set veth0-br master bridge0
+ip link set veth0-br up
+
+# 在 netns0 內設定 IP
+nsenter --net=/run/netns/netns0 ip addr add 192.168.1.2/24 dev veth0
+nsenter --net=/run/netns/netns0 ip link set veth0 up
+```
+
+對另一容器 netns1 重複做一樣的事，IP 是 192.168.1.3，兩個容器透過 bridge0 通訊，使用 192.168.1.x 的 IP，這就是 Docker Bridge 的核心，docker0 是 bridge，每容器一個 veth 連到它，讓容器間用 IP 通訊
+
+#### 3. 連外網與 NAT
+
+```bash
+# 在 bridge0 加 IP
+ip addr add 192.168.1.1/24 dev bridge0
+
+# 啟用 IP forwarding
+sysctl -w net.ipv4.ip_forward=1
+
+# NAT 規則（讓容器流量偽裝成主機 IP）
+iptables -t nat -A POSTROUTING -s 192.168.1.0/24 -o eth0 -j MASQUERADE
+```
+
+容器能 ping 外網，但外部不知容器 IP，這就是 Docker Bridge 的 NAT 機制
+
+#### 4. 從外部連容器與端口發佈
+
+```bash
+# 外部連容器需 port mapping，假設容器跑服務在 80 port，需要加規則
+iptables -t nat -A PREROUTING -p tcp --dport 8080 -j DNAT --to-destination 192.168.1.2:80
+iptables -A FORWARD -p tcp -d 192.168.1.2 --dport 80 -j ACCEPT
+```
+
+最後這實現 Docker 的 -p 8080:80：外部連主機 8080，轉到容器 80
+
+看到這邊也實作完了 docker bridge 的原理啦！看圖可以更清楚呦！
+
 ## Reference
 
 https://docs.docker.com/engine/network/drivers/
@@ -139,6 +210,8 @@ https://ithelp.ithome.com.tw/articles/10305163
 https://ithelp.ithome.com.tw/articles/10305163
 
 https://www.docker.com/blog/understanding-docker-networking-drivers-use-cases/
+
+https://labs.iximiuz.com/tutorials/container-networking-from-scratch
 
 # PID 1 的重要性、Signals 與關閉機制
 
