@@ -238,6 +238,23 @@ ip link list
     link/ether fe:de:63:5f:37:7d brd ff:ff:ff:ff:ff:ff link-netnsid 0
 ```
 
+或是可以從 netns0 ping netns1 來查看是否有正確的連接
+
+```bash
+sudo nsenter --net=/run/netns/netns0 ping -c 3 192.168.1.3
+```
+
+```bash
+# 在主機 namespace 檢查 bridge0
+sudo ip link list master bridge0
+
+# Output:
+5: veth0-br@if6: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master bridge0 state UP mode DEFAULT group default qlen 1000
+    link/ether 92:59:0b:1c:8a:8f brd ff:ff:ff:ff:ff:ff link-netns netns0
+7: veth1-br@if8: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master bridge0 state UP mode DEFAULT group default qlen 1000
+    link/ether 4e:dd:22:a9:88:0f brd ff:ff:ff:ff:ff:ff link-netns netns1
+```
+
 看到這邊也實作完了 docker bridge 的原理啦！看圖可以更清楚呦！
 
 <img width="2000" height="1136" alt="image" src="https://github.com/user-attachments/assets/31287771-08e0-4d79-90b8-cc03214270cf" />
