@@ -273,6 +273,8 @@ to unfreeze all tasks in the container :
 
 今天看到了 PID 和 cgroup freezer，其實平常是不會直接操作到 cgroup freezer，他是比較在背景發生的場景，當你執行 `docker pause <container>` 時，Docker 會透過 cgroup freezer 將該容器內的所有進程 FROZEN，暫停 CPU 調度，容器內進程就像被冰凍一樣，不會執行任何 code，執行 `docker unpause <container>` 時，Docker 會將 cgroup 狀態改為 THAWED，讓所有進程恢復運作，在一些 high-level Docker 或容器管理平台，可能會用 freezer 來暫停不活躍的容器或進程，節省 CPU 或暫時隔離進程，其實我們也可以看到圖片的 docker 生命週期，就可以知道今天所說的的細節環節，雖然在途中沒有講到，但已經可以從其中的流程了解到了細節的運作了～～
 
+<img width="1079" height="648" alt="image" src="https://github.com/user-attachments/assets/9fde7f0d-2ef2-4f31-87ea-a98b6707e1a5" />
+
 ## Reference
 
 https://kernel.meizu.com/2024/07/12/sub-system-cgroup-freezer-in-Linux-kernel/
