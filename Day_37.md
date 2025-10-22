@@ -146,30 +146,47 @@ docker network create --ipv6 --ipv4=false v6net
 ```bash
 # Docker Bridge 的基礎是 network namespace (netns)，它複製網路堆疊，讓容器有獨立路由、防火牆和裝置
 
-ip netns add netns0
+sudo ip netns add netns0
+sudo ip netns add netns1
 
 ip netns list
 
 # 進入 namespace 跑 bash
 nsenter --net=/run/netns/netns0 bash
+
+ip link list
+
+# 輸出應只顯示
+
+
+
+# 然後可以跳出
+exit
 ```
 
 #### 2. 建構 Bridge 網路，讓容器互相通訊
 
 ```bash
 # Docker 的 bridge (如 docker0) 是虛擬交換器，連接容器的 veth 裝置
-ip link add name bridge0 type bridge
-ip link set bridge0 up
+sudo ip link add name bridge0 type bridge
+sudo ip link set bridge0 up
 
-# 為容器建立 veth pair (一端在容器，一端連 bridge)：假設有 netns0，建立 veth
-ip link add veth0 type veth peer name veth0-br
-ip link set veth0 netns netns0
-ip link set veth0-br master bridge0
-ip link set veth0-br up
+# 為容器建立 veth pair (一端在容器，一端連 bridge)
+# 配置 netns0
+sudo ip link add veth0 type veth peer name veth0-br
+sudo ip link set veth0 netns netns0
+sudo ip link set veth0-br master bridge0
+sudo ip link set veth0-br up
+sudo nsenter --net=/run/netns/netns0 ip addr add 192.168.1.2/24 dev veth0
+sudo nsenter --net=/run/netns/netns0 ip link set veth0 up
 
-# 在 netns0 內設定 IP
-nsenter --net=/run/netns/netns0 ip addr add 192.168.1.2/24 dev veth0
-nsenter --net=/run/netns/netns0 ip link set veth0 up
+# 配置 netns1
+sudo ip link add veth1 type veth peer name veth1-br
+sudo ip link set veth1 netns netns1
+sudo ip link set veth1-br master bridge0
+sudo ip link set veth1-br up
+sudo nsenter --net=/run/netns/netns1 ip addr add 192.168.1.3/24 dev veth1
+sudo nsenter --net=/run/netns/netns1 ip link set veth1 up
 ```
 
 對另一容器 netns1 重複做一樣的事，IP 是 192.168.1.3，兩個容器透過 bridge0 通訊，使用 192.168.1.x 的 IP，這就是 Docker Bridge 的核心，docker0 是 bridge，每容器一個 veth 連到它，讓容器間用 IP 通訊
@@ -178,13 +195,13 @@ nsenter --net=/run/netns/netns0 ip link set veth0 up
 
 ```bash
 # 在 bridge0 加 IP
-ip addr add 192.168.1.1/24 dev bridge0
+sudo ip addr add 192.168.1.1/24 dev bridge0
 
 # 啟用 IP forwarding
-sysctl -w net.ipv4.ip_forward=1
+sudo sysctl -w net.ipv4.ip_forward=1
 
 # NAT 規則（讓容器流量偽裝成主機 IP）
-iptables -t nat -A POSTROUTING -s 192.168.1.0/24 -o eth0 -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -s 192.168.1.0/24 -o eth0 -j MASQUERADE
 ```
 
 容器能 ping 外網，但外部不知容器 IP，這就是 Docker Bridge 的 NAT 機制
@@ -193,8 +210,8 @@ iptables -t nat -A POSTROUTING -s 192.168.1.0/24 -o eth0 -j MASQUERADE
 
 ```bash
 # 外部連容器需 port mapping，假設容器跑服務在 80 port，需要加規則
-iptables -t nat -A PREROUTING -p tcp --dport 8080 -j DNAT --to-destination 192.168.1.2:80
-iptables -A FORWARD -p tcp -d 192.168.1.2 --dport 80 -j ACCEPT
+sudo iptables -t nat -A PREROUTING -p tcp --dport 8080 -j DNAT --to-destination 192.168.1.2:80
+sudo iptables -A FORWARD -p tcp -d 192.168.1.2 --dport 80 -j ACCEPT
 ```
 
 最後這實現 Docker 的 -p 8080:80：外部連主機 8080，轉到容器 80
@@ -202,6 +219,16 @@ iptables -A FORWARD -p tcp -d 192.168.1.2 --dport 80 -j ACCEPT
 看到這邊也實作完了 docker bridge 的原理啦！看圖可以更清楚呦！
 
 <img width="2000" height="1136" alt="image" src="https://github.com/user-attachments/assets/31287771-08e0-4d79-90b8-cc03214270cf" />
+
+#### Cleanup
+
+```bash
+sudo ip netns delete netns0 2>/dev/null
+sudo ip netns delete netns1 2>/dev/null
+sudo ip link delete bridge0 2>/dev/null
+sudo iptables -t nat -F
+sudo iptables -F
+```
 
 ## Reference
 
