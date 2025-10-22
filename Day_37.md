@@ -102,6 +102,8 @@ NETWORK ID     NAME      DRIVER    SCOPE
 
 我們比較常見的 docker 網路類型是 bridge mode
 
+<img width="1295" height="643" alt="image" src="https://github.com/user-attachments/assets/4b85ff86-c5d2-4dfc-871f-f1670b197290" />
+
 ```bash
 docker network create my-net
 
