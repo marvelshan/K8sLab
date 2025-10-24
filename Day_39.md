@@ -40,7 +40,7 @@ AWS 的事件影響範圍相當的大，但不同的架構也有不同的差異�
 
 ## History (The past) does not repeat itself, but it (often) rhymes\_\_Mark Twain
 
-歷史的細節可能不同，但總會出現驚人的相似之處或模式，來自馬克吐溫，回顧 2021 年 12 月 7 日與 10 日的 AWS US-EAST-1 中斷事件，雖然那時候我還沒有踏入業界，這次的事件也讓我去回顧了過去的歷史事件，因為資料中心硬體故障，導致 internal network block，而這次出事的也是這個 region，這也是 AWS 最早的 region 也是大多數服務的 region，然後也是最便宜的，這也影響了相當多的服務，在之後 AWS 強化了區域隔離與自動 failover 機制，強調多 Multi-AZ 的重要性
+歷史的細節可能不同，但總會出現驚人的相似之處或模式，來自馬克吐溫，回顧 2021 年 12 月 7 日與 10 日的 AWS US-EAST-1 中斷事件，雖然那時候我還沒有踏入業界，但這次的事件也讓我去回顧了過去的歷史事件，當時多個 Amazon 服務以及依賴它們的應用程式在短短幾分鐘內開始出現顯著的性能下降與錯誤率上升，造成 EC2、DynamoDB、Connect 等服務在 US-EAST-1 區域的 API 請求延遲劇增甚至超時，Downdetector 在高峰期記錄了數萬起用戶投訴，初期的故障主要呈現「降級」而非完全中斷，大部分使用者仍能部分存取服務，但 API Gateway 的延遲飆升與錯誤增加，隨後導致多層依賴服務受到影響，呈現連鎖反應。12 月 10 日的「餘震」雖然規模較小，但仍造成超過一小時的服務中斷，並伴隨 500 server error，整個事件顯示，雖然互聯網的初衷是去中心化，但過度依賴單一雲端區域與複雜的服務依賴鏈，仍會導致集中性風險，這次事件發生的 US-EAST-1，是 AWS 最早啟用的區域，也是大多數服務的預設 region，成本較低，因此承載大量應用與依賴，當時資料中心硬體故障引發 internal network block，造成廣泛的服務影響，也在這之後 AWS 加強了區域隔離、多 Availability Zone 設計與自動 failover 機制，進一步強調了多 AZ、多區域部署的重要性
 
 而時間來到 2025/6/12，GCP 也迎來了一場更大的全球性中斷，這次事件從美國太平洋時間上午 10:49 開始，歷時八小時，造成超過 50 項服務停擺、影響 140 萬筆用戶。從 Gmail、Drive、YouTube 到 Spotify、Discord、Cloudflare，幾乎整個雲端生態都受到波及，這起事故並非來自硬體或網路，而是一次簡單的程式邏輯錯誤——一個漏掉空值檢查的升級版本，意外讓全球 42 個分區的 Service Control 系統同時因 Null Pointer Exception 停擺，修補雖在 40 分鐘內完成，但後續因重試機制缺乏隨機延遲與指數退避，造成雪崩式的重試流量，使部分大型分區如 US Central 1 進一步崩潰，最後運維團隊只能手動限流、重新分配流量，歷經三個多小時才逐步恢復。而這次事故也連帶拖垮了高度依賴 GCP 的 Cloudflare，讓全球 20% 的網路流量受到影響
 
@@ -66,7 +66,9 @@ AWS 的事件影響範圍相當的大，但不同的架構也有不同的差異�
 
 [AWS 大當機事件的真正問題](https://www.linkedin.com/posts/leehappy_aws-%E5%A4%A7%E7%95%B6%E6%A9%9F%E4%BA%8B%E4%BB%B6%E7%9A%84%E7%9C%9F%E6%AD%A3%E5%95%8F%E9%A1%8C-activity-7386565401750642689-J-6H)
 
-[前幾天 AWS 的 us-east-1 出事報告](https://blog.gslin.org/archives/2021/12/14/10461/%E5%89%8D%E5%B9%BE%E5%A4%A9-aws-%E7%9A%84-us-east-1-%E5%87%BA%E4%BA%8B%E5%A0%B1%E5%91%8A/)
+[AWS Outage Analysis: December 7 & 10, 2021](https://www.thousandeyes.com/blog/aws-outage-analysis-dec-7-2021)
+
+[AWS 公布上周大規模故障原因：自動化擴充容量造成網路設備過載](https://www.ithome.com.tw/news/148336)
 
 [Summary of the AWS Service Event in the Northern Virginia (US-EAST-1) Region](https://aws.amazon.com/tw/message/12721/)
 
