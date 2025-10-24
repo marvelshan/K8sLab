@@ -54,7 +54,7 @@ AWS 的事件影響範圍相當的大，但不同的架構也有不同的差異�
 
 每一次事故，都是整個產業的集體學習，我們要從這些事件中不斷吸取經驗、修正假設、精進設計，讓可預期的失誤變得更可控，也讓下一次災難發生時，我們能更快、更穩地站起來！
 
-小備注：我也會持續的寫文章，放在我的 [github](https://github.com/marvelshan/K8sLab) 呦
+小備注：我也會持續的寫文章，放在我的 [github](https://github.com/marvelshan/tech-forum) 呦
 
 ## Reference
 
