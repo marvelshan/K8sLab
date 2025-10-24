@@ -64,6 +64,8 @@ AWS 的事件影響範圍相當的大，但不同的架構也有不同的差異�
 
 [DynamoDB down us-east-1 by Reddit](https://www.reddit.com/r/aws/comments/1obd3lx/dynamodb_down_useast1/)
 
+[AWS 大當機事件的真正問題](https://www.linkedin.com/posts/leehappy_aws-%E5%A4%A7%E7%95%B6%E6%A9%9F%E4%BA%8B%E4%BB%B6%E7%9A%84%E7%9C%9F%E6%AD%A3%E5%95%8F%E9%A1%8C-activity-7386565401750642689-J-6H)
+
 [前幾天 AWS 的 us-east-1 出事報告](https://blog.gslin.org/archives/2021/12/14/10461/%E5%89%8D%E5%B9%BE%E5%A4%A9-aws-%E7%9A%84-us-east-1-%E5%87%BA%E4%BA%8B%E5%A0%B1%E5%91%8A/)
 
 [Summary of the AWS Service Event in the Northern Virginia (US-EAST-1) Region](https://aws.amazon.com/tw/message/12721/)
