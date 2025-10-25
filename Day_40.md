@@ -8,7 +8,7 @@
 
 > Go’s purpose is therefore not to do research into programming-language design; it is to improve the working environment for its designers and their coworkers.
 
-目的在於提升團隊開發效率與大型軟體可維護性，而不是一昧的追求程式語言的理論，這樣我們就可以了解到 go 想要創造一個可讀性高、維護性強、開發速度快的 programming environment，讓 developer 可以更專注於解決實際的問題，而不是限於語法糖和複雜的語法設計，這就是為什麼 GO 如此的強調簡潔而實用的哲學，沒有複雜的繼承關係、過多的語法糖，而是用 struct 和 interface 與一致的 gofmt 來讓團隊協作更加的容易
+目的在於提升團隊開發效率與大型軟體可維護性，而不是單純進行程式語言設計的研究，這樣我們就可以了解到 go 想要創造一個可讀性高、維護性強、開發速度快的 programming environment，讓 developer 可以更專注於解決實際的問題，而不是限於語法糖和複雜的語法設計，這就是為什麼 GO 如此的強調簡潔而實用的哲學，沒有複雜的繼承關係、過多的語法糖，而是用 struct 和 interface 與一致的 gofmt 來讓團隊協作更加的容易
 
 ## 探索 Kubernetes repo 的程式結構
 
