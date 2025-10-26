@@ -41,6 +41,8 @@ require (
 	client := &K8sClient{clientset: clientset}
 ```
 
+## CoreV1()：指向核心 API 的 Client
+
 以下這邊可以看到會用到 `client-go` 裡面的 `CoreV1()` 來去返回一個指向核心 API（core/v1）的客戶端接口，包含 Pod、Service、Node 等核心資源的操作，這裏也可以在 [github repo](https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/client-go/kubernetes/clientset.go#L324) 看到這個 `func (c *Clientset) CoreV1() corev1.CoreV1Interface` function
 
 然後 `Pods(namespace)` 這邊就可以看到他要返回送進來帶 `namespace` 的 pod，`List(ctx context.Context, opts metav1.ListOptions)` 這邊 List 方法返回一個 PodList 結構，包含所有 Pod 的詳細資訊，它使用了 RESTful API 的語義，並內建錯誤處理與重試機制
@@ -53,6 +55,8 @@ require (
 	}
 ```
 
+## Pods(namespace) 與 newPods() 的連結
+
 那好像還不是很清楚他們的連結性，這就可以看到[這個檔案](https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/client-go/kubernetes/typed/core/v1/core_client.go#L90C1-L92C2) `kubernetes/staging/src/k8s.io/client-go/kubernetes/typed/core/v1/core_client.go`
 
 ```go
@@ -62,6 +66,8 @@ func (c *CoreV1Client) Pods(namespace string) PodInterface {
 ```
 
 這裡每當使用者透過 CoreV1Client 呼叫 Pods(namespace) 方法時，就會觸發 `newPods(c, namespace)`，進而建立一個專屬於該 namespace 的 Pod 操作客戶端
+
+## newPods() 與 Struct Embedding 的應用
 
 接著就可以進到 [github](https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/client-go/kubernetes/typed/core/v1/pod.go) `staging/src/k8s.io/client-go/kubernetes/typed/core/v1/pod.go`，這個位置來看怎麼使用的
 
@@ -102,6 +108,8 @@ func newPods(c *CoreV1Client, namespace string) *pods {
 }
 ```
 
+## List() 方法的實際呼叫鏈
+
 接著接著，還沒完喔，這邊我們要來看到 `List()`，這邊是要來到 [staging/src/k8s.io/client-go/gentype/type.go](https://github.com/kubernetes/kubernetes/blob/fb10a2995459c52238024adbb10ffdfbdafd2c4d/staging/src/k8s.io/client-go/gentype/type.go#L133)，這裏就是剛剛看到 newPods 這個 function 裡面的 `gentype.NewClientWithListAndApply[]()`，當我們使用到了 List，實際是呼叫了 `gentype.ClientWithListAndApply.List`，接著在這邊有 `ClientWithListAndApply`，然後在前面的 struct 有定義了 `alsoLister`，那這個定義的 `alsoLister` 就是實際實作 `func (l *alsoLister[T, L]) List()` 的地方，這也是 go Method Promotion 和 Anonymous Embedding 的特性，將內嵌類型的所有方法都會被「提升」到外層 struct，就好像外層 struct 自己定義了這些方法一樣
 
 ```go
@@ -138,6 +146,8 @@ func (l *alsoLister[T, L]) List(ctx context.Context, opts metav1.ListOptions) (L
 	return list, err
 }
 ```
+
+## 呼叫鏈總結與結構圖
 
 用這樣的方式應該就可以更清楚的了解了他實際的運作，這就是很典型的 composition over inheritance 設計，利用 go 的 Generic Type 來避免重複的使用 CRUD
 
