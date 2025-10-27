@@ -55,6 +55,12 @@ fmt.Println(msg)
 - 若該物件尚未被處理，則加入 queue 並標記進入 processing set
 - 當該物件處理完畢後，若 dirty set 中仍有它的紀錄，代表在期間內又發生了變化，物件會被重新加入 queue
 
+<img width="670" height="808" alt="image" src="https://github.com/user-attachments/assets/4411f7d6-49cd-4fc8-96c9-c27c05f6602b" />
+
+> Dirty Set：記錄所有已經被標記為「需再次處理」的物件
+> 
+> Processing Set：記錄當前正在被某個 reconcile loop 處理的物件
+
 這樣的設計保證不會同時有兩個 goroutine 處理同一個物件，並能夠在高頻事件中自動合併多次變更，避免重複計算
 
 但這種機制也帶來一個副作用，因為物件可能會在 queue 尾端被重新排入，因此某些請求可能遭遇延遲，特別是長時間的 reconcile 任務中
