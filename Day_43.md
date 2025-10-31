@@ -46,7 +46,7 @@ type PodAntiAffinity struct {
 ### 用 Golang 定義一個簡單的 Pod 結構，並序列化為 YAML
 
 ```bash
-go init pod-yaml
+go mod init pod-yaml
 ```
 
 ```go
