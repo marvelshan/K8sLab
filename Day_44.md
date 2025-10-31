@@ -122,3 +122,90 @@ func (tbprl *tokenBucketPassiveRateLimiter) TryAccept() bool {
 ```
 
 最後來小結一下這邊，client-side rate limiting 利用 Token Bucket 對 client 端請求進行平滑限制，配合 burst 控制短期突發流量，避免 API Server 被瞬間大量請求淹沒；而 server-side 的 APF 則在 API Server 內部進行排隊、分類和優先處理，兩者結合，形成 Kubernetes 對控制平面的完整保護機制
+
+## etcd3/store.Create()：核心儲存邏輯
+
+接著要來介紹寫入 etcd 的機制，因為昨天有提到創建 pod 時經過 decode 後會陸續經過幾個步驟，像是 defaulting、validation 還有 storage，也就是將資源的狀態儲存或更新到 etcd 中，而現在的 etcd 已經更新到 3 了，所以在檔案 [kubernetes/staging/src/k8s.io/apiserver/pkg/storage/etcd3/store.g](https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apiserver/pkg/storage/etcd3/store.go)o 中，他會是 etcd3，這個檔案中也包含了讀取現有的資源、加密、Optimistic Concurrency Control 還有寫入 etcd
+
+```go
+func (s *store) Create(ctx context.Context, key string, obj, out runtime.Object, ttl uint64) error {
+    // ...
+	if version, err := s.versioner.ObjectResourceVersion(obj); err == nil && version != 0 {
+		return storage.ErrResourceVersionSetOnCreate
+	}
+    // ...
+    txnResp, err := s.client.Kubernetes.OptimisticPut(ctx, preparedKey, newData, 0, kubernetes.PutOptions{LeaseID: lease})
+    if !txnResp.Succeeded {
+        return storage.NewKeyExistsError(preparedKey, 0)
+    }
+    // ...
+}
+```
+
+在這邊我們看到 `ObjectResourceVersion` 來檢查 ResourceVersion 是否是 0，那我們要先來了解這是什麼，在 etcd 中每個物件都會帶有這個欄位 metadata.resourceVersion，這個是由 etcd 自動產生，並且自己遞增版本號，用來追蹤該物件的版本
+
+接著我們也看到很重要的部分，也就是 `OptimisticPut` 實現樂觀鎖的部分，`OptimisticPut(ctx, key, value, 0, ...)` 但是這邊也把期望的 version 先輸入了 version 是 0，也就是這個版本是第一版，那我們來看一下在更新的時候會怎麼做呢？
+
+```go
+func (s *store) GuaranteedUpdate(...) error {
+    // 1. 先讀取當前狀態
+    origState, err := getCurrentState() // ← 這裡會呼叫 Get()
+
+    for {
+        // 2. 執行業務邏輯（tryUpdate）
+        ret, ttl, err := s.updateState(origState, tryUpdate)
+
+        // 3. 嘗試寫入，期望 revision = origState.rev
+        txnResp, err := s.client.Kubernetes.OptimisticPut(ctx, key, newData, origState.rev, ...)
+
+        if !txnResp.Succeeded {
+            // 4. 若失敗（也許別人先改了），重新讀取
+            origState, err = getCurrentState() // ← 再次 Get()
+            continue
+        }
+        break
+    }
+}
+```
+
+這邊是不是就可以看到這裏的 `OptimisticPut` 是使用到 `origState.rev`，要先拿到 ResourceVersion 才可以更新現有的版本，那假如這個要新創建的資源已經被建立了呢？我們可以看到在 Create 這個 function 中有以下，也就是假如 key 已經存在，這裏會是 `txnResp.Succeeded = false`，就會直接 return 掉
+
+```go
+	if !txnResp.Succeeded {
+		return storage.NewKeyExistsError(preparedKey, 0)
+	}
+```
+
+那我們接著就要繼續往下看 `OptimisticPut()`，[這邊是怎麼實作的](https://github.com/etcd-io/etcd/blob/main/client/v3/kubernetes/client.go)，這裏正是實作 `Optimistic Concurrency` 的機制，以下可以看到 `Txn` 這邊會判斷說是否 `expectedRevision` 跟版本一致，假如不一致的話才會 `clientv3.OpPut(...)` 去執行 Put，所以這邊就對應到 Create 其中的一個 `txnResp, err := s.client.Kubernetes.OptimisticPut`，這邊會拿到 `txnResp`，假如 key 這裡存在，這裏的 txn 就會失敗，進而 `txnResp.Succeeded` 就會是 false，而假如是 update 的話，也是比較前面的 key 版本有沒有跟預期的相符，假如有跟預期的相符，代表說這個期間沒有被他人更改，就可以更新，也實現了樂觀鎖的效果，跟 SQL 的樂觀鎖的機制是不是也一樣呀！
+
+```go
+func (k Client) OptimisticPut(ctx context.Context, key string, value []byte, expectedRevision int64, opts PutOptions) (resp PutResponse, err error) {
+    txn := k.KV.Txn(ctx).If(
+        clientv3.Compare(clientv3.ModRevision(key), "=", expectedRevision),
+    ).Then(
+        clientv3.OpPut(key, string(value), clientv3.WithLease(opts.LeaseID)),
+    )
+
+    if opts.GetOnFailure {
+        txn = txn.Else(clientv3.OpGet(key))
+    }
+
+    txnResp, err := txn.Commit()
+    if err != nil {
+        return resp, err
+    }
+    resp.Succeeded = txnResp.Succeeded
+    resp.Revision = txnResp.Header.Revision
+    if opts.GetOnFailure && !txnResp.Succeeded {
+        if len(txnResp.Responses) == 0 {
+            return resp, fmt.Errorf("invalid OptimisticPut response: %v", txnResp.Responses)
+        }
+        resp.KV = kvFromTxnResponse(txnResp.Responses[0])
+    }
+    return resp, nil
+}
+```
+
+## 小結
+
+今天不只介紹了 rate limiting 保護 api server 的機制，還講到了 etcd 背後儲存資料和更新資料的方式，後續還會再把建立資源的流程全部順一次～
