@@ -10,7 +10,11 @@
 
 k8s api server 是整個 cluster 的 control plane，承載了所有資源操作的請求，假如在高負載貨異常的情況下，假如沒有很好的防護，api server 崩潰會導致整個 cluster 不可用，這樣是相當的危險的，所以 rate limiting 和 retry 的機制就相當的重要
 
+### Flow Control 機制：Client-side vs Server-side
+
 首先我們要先來看到有兩種 rate limiting 的機制，分為 Client-side Flow Control 和 Server-side Flow Control，Client-side Flow Control 是發生在 kubectl 和 controller，是由 client-go 來實現的、而 Server-side Flow Control 是發生在 api server 內部的，主要是由 [Priority and Fairness](https://kubernetes.io/docs/concepts/cluster-administration/flow-control/) 機制去實現的
+
+### Server-side Flow Control：API Priority and Fairness (APF)
 
 接著我們可以看到 [staging/src/k8s.io/apiserver/pkg/server/filters/priority-and-fairness.go](https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apiserver/pkg/server/filters/priority-and-fairness.go) 這個檔案，先來介紹 APF 的機制，他是針對不同優先等級的請求進行陪對和控制，核心目標是防止低優先的請求阻塞系統，確保高優先的請求能夠被優先處理，再來是看到程式碼 `priorityAndFairnessHandler.Handle`，每個請求抵達時，[會先取出 `RequestInfo` 和 `User`，並判斷是否為 watch 請求或是長時間的請求](https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apiserver/pkg/server/filters/priority-and-fairness.go#L103C1-L108C3)
 
@@ -22,6 +26,8 @@ k8s api server 是整個 cluster 的 control plane，承載了所有資源操作
 		return
 	}
 ```
+
+### Classification
 
 再來是針對一般的請求做 classification，決定請求對應的 FlowSchema 與 PriorityLevel，並估算他的 workEstimator
 
@@ -41,6 +47,8 @@ k8s api server 是整個 cluster 的 control plane，承載了所有資源操作
         return h.workEstimator(r, classification.FlowSchemaName, classification.PriorityLevelName)
     }
 ```
+
+### Work Estimation
 
 在以上的 `estimateWork` 估算完工作量後，APF 會根據優先等級和資源佔用決定是否立即執行、排隊等待或是拒絕請求，[而等待的上限是由 `getRequestWaitContext` 控制的](https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apiserver/pkg/server/filters/priority-and-fairness.go#L396)，避免請求無限的排隊
 
@@ -72,6 +80,8 @@ tooManyRequests(r, w, strconv.Itoa(int(h.droppedRequests.GetRetryAfter(classific
 ```
 
 以上可以看到 APF 利用 FlowSchema 和 Priority 來對 request 分類，並針對不同請求類型像是 mutating、readonly、watch 給予差異化的處理，來保護 API server 不會過載
+
+### Client-side Flow Control：Token Bucket Rate Limiter
 
 那 client-side 的 rate limiting 呢？可以看到 [`func NewTokenBucketRateLimiter(qps float32, burst int) RateLimiter`](https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/client-go/util/flowcontrol/throttle.go#L63C1-L63C67)，這裏是使用 Token Bucket 來去防止 client-side 短時間對 api server 發送過多的請求，造成 control plane 過載，Token Bucket 基本的概念是每個請求需要消耗一個 token，假如 bucket 有 token 請求會立即執行，假如沒有請求就會等待或是被拒絕，而 bucket 內的 token 上限是由 burst 來決定
 
@@ -143,6 +153,8 @@ func (s *store) Create(ctx context.Context, key string, obj, out runtime.Object,
 ```
 
 在這邊我們看到 `ObjectResourceVersion` 來檢查 ResourceVersion 是否是 0，那我們要先來了解這是什麼，在 etcd 中每個物件都會帶有這個欄位 metadata.resourceVersion，這個是由 etcd 自動產生，並且自己遞增版本號，用來追蹤該物件的版本
+
+### OptimisticPut
 
 接著我們也看到很重要的部分，也就是 `OptimisticPut` 實現樂觀鎖的部分，`OptimisticPut(ctx, key, value, 0, ...)` 但是這邊也把期望的 version 先輸入了 version 是 0，也就是這個版本是第一版，那我們來看一下在更新的時候會怎麼做呢？
 
