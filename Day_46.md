@@ -1,0 +1,118 @@
+## K8S Lab Day_46
+
+## 前言
+
+今天是輕鬆 Day 就不寫主題，就隨意看到什麼主題，或是之前有看到但沒細讀的東西就會被我當成平常 day 學習的東西，其實網路上的中文資源也真的是很豐富，像是我學一些底層的 linux 和系統指令我就會看鳥哥私房菜，這些底層的東西真的是放多久都很有價值，不過這陣子在面試的時候就會看到很多主管都會很看重有沒有玩過 AI 的東西，真的在 AI 的潮流下有用過真的就會比較重視，但是我還是抱持的相反意見啦，過去有跟一個工程師朋友聊，他說一個有價值的工程師不是你會用多少工具，追逐多新的技術，而是你在這個技術研究的多透徹，畢竟在軟體業有多到學不完的東西，我在看 k8s 的底層的東西也學到很多資料結構的東西，發現其實過去學的資料結構假如是一直學新技術是很少碰到的，但是只要往下去探索的話就可以內化很多東西給自己
+
+## Admission Controller
+
+Admission Controller 是內建於 kube-apiserver 的 Go code，在請求通過認證和授權後，會寫入 etcd 前攔截並且處理資源，會有兩階段執行 Mutating → Validating，昨天有講到 defaulting，在這邊也會自動填入，像是 Mutating 時會自動補上 StorageClass，而啟用的話就是使用 `--enable-admission-plugins=LimitRanger,PodSecurity` 關閉的話就可以使用 `--disable-admission-plugins=AlwaysPullImages`，而他是在 scheduler 之前運作的，所以其實在完全創建之前他還是做了很多事情呢！
+
+## linux 帳號權限
+
+就是那麼跳 tone，沒看幾下就來看其他的，看到帳號權限首先就要來看 UID 和 GID，就是 user id 和 group id 的簡稱，可以在 `/etc/passwd` 與 `/etc/group` 看到，假如手邊有 linux 的機器的話就可以試試看
+
+```bash
+id
+uid=1000(ubuntu) gid=1000(ubuntu) groups=1000(ubuntu),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev),118(netdev),119(lxd)
+
+# 1000 是一般第一個建立的使用者帳號預設 uid
+```
+
+| 群組名稱 | 用途                                          |
+| -------- | --------------------------------------------- |
+| ubuntu   | 該使用者的主要群組                            |
+| adm      | 允許讀取系統日誌（/var/log），具管理權限      |
+| dialout  | 可使用串列埠（如 /dev/ttyS0、Arduino 連接等） |
+| cdrom    | 可存取光碟機                                  |
+| floppy   | 可存取磁片機（老舊設備）                      |
+| sudo     | 可使用 `sudo` 執行管理員指令（擁有管理權限）  |
+| audio    | 可存取音訊設備                                |
+| dip      | 允許撥接網路（PPP, SLIP，較少用）             |
+| video    | 可存取顯示卡 / GPU、影片裝置                  |
+| plugdev  | 可管理可移除儲存裝置（USB）                   |
+| netdev   | 可管理網路設備                                |
+| lxd      | 可管理 LXD 容器（若有安裝 LXD）               |
+
+假如想要查看 group 裡面的成員的話可以使用以下
+
+```bash
+getent group sudo
+sudo:x:27:ubuntu
+```
+
+也可以進去看一下裡面的檔案長什麼樣子
+
+```bash
+vi /etc/passwd
+```
+
+```bash
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
+```
+
+這裏可以看到每一行都代表一個使用者，有七個欄位 `用戶名:密碼欄位:UID:GID:描述欄:local目錄:登入 Shell`，來拿第一個當成範例
+
+```bash
+root:x:0:0:root:/root:/bin/bash
+```
+
+| 欄位      | 名稱                  | 說明                                 |
+| --------- | --------------------- | ------------------------------------ |
+| root      | 使用者名稱 (username) | 帳號名稱                             |
+| x         | 密碼欄位 (password)   | `x` 代表真正密碼存放在 `/etc/shadow` |
+| 0         | UID (User ID)         | 使用者 ID，`0` 為最高權限 root       |
+| 0         | GID (Group ID)        | 主群組 ID，`0` 為 root 群組          |
+| root      | 描述欄 (GECOS)        | 通常寫使用者全名或描述               |
+| /root     | 使用者家目錄          | 帳號的 Home 路徑                     |
+| /bin/bash | 登入時使用的 Shell    | 使用者登入後的 Shell 程式            |
+
+那我們可以看到很多的登入的 shell 是 `/usr/sbin/nologin`，因為系統裡很多的帳號不是給人使用的，是給服務使用的，所以這些帳號只用來執行背景服務，不允許登入系統的
+
+### su
+
+再來我們看到切換身份的指令，全名是 substitute user 或 switch user，常常是用來七誒換到 root 或是其他的使用者帳號來獲取不同的權限
+
+```bash
+su <使用者名稱>
+```
+
+可以用來切換到不同的使用者，假如不寫使用者的話就是直接切換成 root，而 sudo 呢？就是暫時使用 root 的權限來執行某些指令，所以不要只會 sudo 了 XD 其實還有其他指令可以做操作，假如不使用的話也把這些當作常識吧！
+
+### ACL
+
+接下來要來介紹 Access Control List，在 linux 的檔案系統中，原本只有傳統的 Owner / Group / Others 權限模式（rwx），但是這種模式對某些狀況中有些不夠用，像是一個檔案只能指定一組群組權限，但多個使用者需要不同的權限，就會很難管理，加入了 ACL 就可以更清楚的管理這些權限
+
+假如要讓 alice 有 test.txt 的讀寫權限
+
+```bash
+setfacl -m u:alice:rw test.txt
+```
+
+接著就可以使用這個指令去查看
+
+```bash
+getfacl test.txt
+```
+
+但是這東西其實我自己是不常用啦，其實使用 `chmod/chown` 等等就蠻夠用的，聽到 ACL 第一時間應該會想到 AWS 的 NACL，其實他們差蠻多的，一個是在管理系統權限，一個是在處理雲端網路 VPC subnet 有哪些 ip/port 可以進出 subnet，類似像是 firewall 的功能，所以不要搞混了～
+
+## Reference
+
+https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/
+
+https://linux.vbird.org/linux_basic/centos7/0410accountmanager.php
