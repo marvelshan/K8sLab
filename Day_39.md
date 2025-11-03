@@ -12,7 +12,11 @@
 
 假如要理解這次的故障需要先了解 AWS 的幾個知識點，第一是 DNS，也就是雲端服務的電話簿，負責將域名轉換成 IP address，像是 google.com 轉換成 8.8.8.8，而在 AWS 裡就是 dynamodb.us-east-1.amazonaws.com，轉換成內部節點的 IP address、再來是 DynamoDB，它作為 AWS 的 fully managed NoSQL 資料庫，專門是高可用的存在，用於儲存應用狀態和用戶資料等等的資料、再來是 API endpoint 是 Lambda、EC2 等服務存取 DynamoDB 的入口
 
-故障的原因是在 US-EAST-1 的 DynamoDB API 端點 DNS 解析失敗，這個可能起因於內部的某個 bug 導致 health check 中斷，進而 blcok API request，看起來好像是小問題，但是 DynamoDB 是許多後端 server 依賴於他，像是 EC2 啟動 instance 需要查詢 DynamoDB 中的配置資料，DNS 故障導致服務沒辦法正確的解析 IP 位置，導致 request 暴增
+故障的原因是在 US-EAST-1 的 DynamoDB DNS 自動化系統中的 race condition，AWS 使用「Planner」和「Enactor」兩個組件管理 DynamoDB 的 DNS 記錄，Planner 負責生成 DNS，指定哪些 load balancer IP 是可以使用狀態，而 Enactor 像是多個並行運行的 worker，負責來執行 Planner 到 Route 53 要做的計劃內容，在正常情況下，Planner 生成新計劃（例如 PLAN_V02），Enactors 將其應用到 Route 53，確保 `dynamodb.us-east-1.amazonaws.com` 解析到正確的 IP 列表，而這次的問題是 Planner 生成了 PLAN_V01 後，快速生成了更新的計劃，Enactor A 因延遲而未及時應用 PLAN_V01，Enactor B 已應用更新的 PLAN_V04 並開始清理舊計劃，在清理過程中，Enactor A 終於應用了過時的 PLAN_V01，但此計劃隨即被清理系統移除，導致 DNS 記錄變為空（[]），最後 `dynamodb.us-east-1.amazonaws.com` 回傳 NXDOMAIN 或無 IP 地址，客戶和 AWS 內部服務無法連接到 DynamoDB
+
+也就是這個原因，進而 blcok API request，看起來好像是小問題，但是 DynamoDB 是許多後端 server 依賴於他，像是 EC2 啟動新執行 instance 時，DropletWorkflow Manager（DWFM）必須向 DynamoDB 確認底層實體伺服器 droplet 的 active lease，DNS 故障讓這些檢查卡死，lease 也開始 time out，數十萬 droplet 失去 active lease，無法再被選為新執行個體的載體，EC2 API 只能對外回傳 InsufficientInstanceCapacity 或 RequestLimitExceeded，即使機房裡空著大片伺服器也派不上用場，在後續 DNS 恢復後 DWFM 試圖一次重建所有 lease，卻因規模過大陷入壅塞崩潰，工程師不得不限流並選擇性重啟 DWFM 主機
+
+Network Manager 的系統開始累積延遲，它負責處理網路狀態變更的 backlog，導致新啟動的 EC2 實例雖然能成功創建，卻因網路配置傳播延遲而缺乏連線能力，Network Manager 內部的網路傳播時間大幅上升，它必須消化先前因 DynamoDB 失效而堆積的狀態變更請求，而當 backlog 越積越多，Network Manager 的處理延遲也跟著攀升，形成惡性循環，新 instance 即便分配到 IP，卻無法完成路由註冊或安全規則套用，導致無法與外部通訊，甚至連 ping 外部端點都失敗，工程師花了整整五個小時逐步減輕 Network Manager 的負載，他們透過優先處理關鍵路徑的變更、暫停非必要同步，並擴容後端處理節點來加速恢復
 
 再來是這個問題觸發了 IAM 的連鎖反應，IAM 是 AWS 身份和存取管理服務，負責定義 Roles 和 Policies，確保服務之間的安全溝通，AWS 不直接使用 IAM 發的憑證，而是透過 STS(Security Token Service)，取得 Temporary Security Credentials，這些憑證有效期限通常為數小時或到數天都有
 
@@ -77,3 +81,9 @@ AWS 的事件影響範圍相當的大，但不同的架構也有不同的差異�
 [CrowdStrike 全球當機事件：資安長的反思與應對](https://www.cio.com.tw/crowdstrike-global-crash-event-the-ministers-reflections-and-response/)
 
 [2024 年 CrowdStrike 大規模藍白畫面事件](https://zh.wikipedia.org/zh-tw/2024%E5%B9%B4CrowdStrike%E5%A4%A7%E8%A7%84%E6%A8%A1%E8%93%9D%E5%B1%8F%E4%BA%8B%E4%BB%B6)
+
+[AWS Outage Explained: How DNS and DynamoDB Triggered a Chain Reaction](https://medium.com/@spraneeth4/aws-outage-explained-how-dns-and-dynamodb-triggered-a-chain-reaction-197833b8acb1)
+
+[2025-10 Amazon DynamoDB 於 北維吉尼亞區域 (US-EAST-1) 服務中斷事件摘要](https://www.ernestchiang.com/zh/posts/2025/summary-of-the-amazon-dynamodb-service-disruption-in-the-northern-virginia-us-east-1-region/)
+
+[What caused the large AWS outage?](https://newsletter.pragmaticengineer.com/p/what-caused-the-large-aws-outage)
