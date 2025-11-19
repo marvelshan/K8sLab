@@ -2,6 +2,8 @@
 
 # Kiro Spec-Driven Development Workshop
 
+<img width="1200" height="675" alt="image" src="https://github.com/user-attachments/assets/e7ccdf9b-eb5a-442e-8858-64fcd8fb444b" />
+
 ## 前言
 
 昨天是高雄的 AWS 雲端大會，雖然跟台北差不多，然後小了些，但能在高雄參加到這種活動也是一個不一樣的體驗，其中最喜歡的還是參加到了 Kiro 的實作，差不多 1.5 小時，但是感覺認真要做的話應該會要花更久的時間，開始用的時候覺得 vscode 要掰掰了，真的是太好用了，使用 Spec 模式可以快速的把 prototype 做出來，而且需求越符合就越不會出錯，平常我就很常使用 copilot 和 cursor，但是這個的 AI 輔助開發真的是超出我的想像，讓 AI 輔助開法不只是在自己的電腦，而且不只是在各自開發者不同的表達方式不同，而是利用 spec 的方式來好好管理需要開發需求的功能，並且未來也可以讓非 dev 的人員能夠更快速的理解現在開發的運作，變成一個真正懂專案、會規劃、會自動化、並且也會畫架構圖的超級隊友！
@@ -70,6 +72,8 @@ Steering 就像 AI 的一份開發 paradigm，寫完之後以後都可以不用�
 **這樣就完成一次簡單的實作啦！**
 
 ## [Multimodal development with Kiro](https://kiro.dev/blog/multimodal-development-with-kiro-from-design-to-done/)
+
+<img width="3840" height="2160" alt="image" src="https://github.com/user-attachments/assets/7ca22ec9-3d82-4596-8648-fbf92d148054" />
 
 接著要講到講者有提到的這個 Multimodal 的文章，這裏是找到資深架構師 Kandyce Bohannon 所分享的內容，如何從手繪白板的 ERD，然後直接打造出一個支援多雲的交易系統
 
