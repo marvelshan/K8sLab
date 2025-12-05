@@ -1,6 +1,6 @@
 ## K8S Lab Day_48
 
-# Day 8:
+# Study8-Admission-Control深入探討
 
 ## 前言
 

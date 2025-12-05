@@ -1,6 +1,6 @@
 ## K8S Lab Day_42
 
-# Day 4: 當無數個 Goroutine 同時甦醒，我看見了雲原生的靈界之門
+# Study4-當無數個 Goroutine 同時甦醒，我看見了雲原生的靈界之門
 
 ## 前言
 

@@ -1,6 +1,6 @@
 ## K8S Lab Day_43
 
-# Day 5: Kubernetes API 的反序列化之旅，apimachinery 核心揭秘
+# Study5-Kubernetes API 的反序列化之旅，apimachinery 核心揭秘
 
 ## 前言
 

@@ -1,6 +1,6 @@
 ## K8S Lab Day_49
 
-# Day 9:
+# Study9-Kubernetes-Authentication實作演練
 
 ## 前言
 

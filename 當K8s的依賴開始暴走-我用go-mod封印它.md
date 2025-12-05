@@ -1,6 +1,6 @@
 ## K8S Lab Day_41
 
-# Day 3: 當 K8s 的依賴開始暴走，我用 go mod 封印它
+# Study3-當 K8s 的依賴開始暴走，我用 go mod 封印它
 
 ## 前言
 

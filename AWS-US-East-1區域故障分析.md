@@ -1,5 +1,7 @@
 ## K8S Lab Day_39
 
+# AWS-US-East-1區域故障分析
+
 ## 前言
 
 因為前幾天有發生 AWS 重大的事件也就是 region US-EAST-1 大停機，導致上千個應用程式當機無法處理 request，包括 Snapchat、Fortnite、Roblox、Coinbase 和 Canva 等等，持續了很長的一段時間，我注意到的時候下中午，我記得到當天傍晚我在看 medium 還是 500，我也在網路上爬了一些資料，今天就來討論一下這次級聯性的問題吧

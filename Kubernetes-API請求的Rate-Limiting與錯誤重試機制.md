@@ -1,6 +1,6 @@
 ## K8S Lab Day_44
 
-# Day 6: Kubernetes API 請求的 Rate Limiting 與錯誤重試機制
+# Study6-Kubernetes API 請求的 Rate Limiting 與錯誤重試機制
 
 ## 前言
 

@@ -1,6 +1,6 @@
 ## K8S Lab Day_45
 
-# Day 7: 深入理解 Kubernetes Defaulting 與 Validation：從 Pod 建立流程看自動補值與欄位驗證
+# Study7-深入理解 Kubernetes Defaulting 與 Validation：從 Pod 建立流程看自動補值與欄位驗證
 
 ## 前言
 
