@@ -89,9 +89,9 @@
 
    ```text
 
-   A=( " bash arrays are cool." )
+   A=( " bash arrays are cool" )
 
-   echo $(A(8))
+   echo ${A[0]}
    ```
 
    Options:
