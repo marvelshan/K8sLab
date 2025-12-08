@@ -283,23 +283,23 @@ D: No output would get generated (neither to standard output nor to the logfile)
 
 ## 10. One of the servers is having problems: almost all of the disk space in the root partition is being used up and you have no idea why! what command would help you to analyze the disk contents and identify the cause of the lost space ?
 
-    伺服器的根分區（/）磁碟空間快滿了，不知道原因，需要一個指令來分析磁碟內容，找出是哪個檔案或目錄佔用大量空間，這是一個「找出哪個檔案/目錄佔用空間」的問題，而不是只看使用量的統計
+> 伺服器的根分區（/）磁碟空間快滿了，不知道原因，需要一個指令來分析磁碟內容，找出是哪個檔案或目錄佔用大量空間，這是一個「找出哪個檔案/目錄佔用空間」的問題，而不是只看使用量的統計
 
-    a) du -ahd1 /
+a) du -ahd1 /
 
-    du（disk usage）是用來計算檔案與目錄的磁碟使用量，`-a` 顯示檔案與目錄（不過與 `-d1` 一起使用時，通常只顯示目錄，除非有檔案在根目錄下）。`-h` 人類可讀的單位（KB、MB、GB）。`-d1` 只深入到第 1 層（即只顯示根目錄下第一級子目錄的總使用量）。這個指令能快速看出 / 下哪個子目錄佔用最大空間，是常用的空間排查指令
+du（disk usage）是用來計算檔案與目錄的磁碟使用量，`-a` 顯示檔案與目錄（不過與 `-d1` 一起使用時，通常只顯示目錄，除非有檔案在根目錄下）。`-h` 人類可讀的單位（KB、MB、GB）。`-d1` 只深入到第 1 層（即只顯示根目錄下第一級子目錄的總使用量）。這個指令能快速看出 / 下哪個子目錄佔用最大空間，是常用的空間排查指令
 
-    b) df -ah /
+b) df -ah /
 
-    df（disk free）顯示檔案系統的磁碟使用情況（分區級別）。它只會告訴你根分區使用了多少百分比，但不會告訴你哪個目錄或檔案佔用空間
+df（disk free）顯示檔案系統的磁碟使用情況（分區級別）。它只會告訴你根分區使用了多少百分比，但不會告訴你哪個目錄或檔案佔用空間
 
-    c) dc -e size /
+c) dc -e size /
 
-    dc 是一個桌面計算器（逆波蘭表示法計算器），與磁碟空間分析無關
+dc 是一個桌面計算器（逆波蘭表示法計算器），與磁碟空間分析無關
 
-    d) ls -al /
+d) ls -al /
 
-    目錄的大小顯示的是該目錄 metadata 的大小，不是該目錄下所有內容的總大小
+目錄的大小顯示的是該目錄 metadata 的大小，不是該目錄下所有內容的總大小
 
 ### Answer
 
