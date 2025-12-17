@@ -13,6 +13,8 @@ Output: [1,2]
 
 ## Heap
 
+<img width="1000" height="599" alt="image" src="https://github.com/user-attachments/assets/d2b27202-25cf-4704-aa32-be6583a81003" />
+
 這時候就要先來看 heap 這個 data structure，這邊就要先看到 Python 的 heapq 提供的是 Min Heap，並且只保證 heap 最頂端的元素是最小值
 
 ## 解法
