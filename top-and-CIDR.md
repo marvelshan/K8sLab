@@ -2,6 +2,8 @@
 
 `top` 是 Linux/Unix 系統中一個常用的交互式系統監控工具，用來即時顯示系統資源使用情況，包括 CPU、記憶體、交換空間和運行中的進程列表，執行 `top` 命令後，畫面會分為兩個主要部分：**系統摘要（上方幾行）** 和 **進程列表（下方表格）**。以下詳細說明輸出的各部分資訊（基於標準的 top 輸出格式，實際顯示可能因版本或設定略有差異）。
 
+<img width="695" height="396" alt="image" src="https://github.com/user-attachments/assets/5b10b9ee-4984-44cf-8687-59f5d7368f09" />
+
 ## 1. 系統摘要部分
 
 這部分提供系統整體狀態的概覽，每隔幾秒（預設 3 秒）自動更新。
@@ -120,6 +122,8 @@
 # 什麼是 CIDR？ 什麼是子網遮罩 Subnet Mask ？
 
 IPv4 位址本質上是一個 32 位元（bit）的二進位數字
+
+<img width="340" height="520" alt="image" src="https://github.com/user-attachments/assets/73c61481-7330-4d32-9a74-679af5925438" />
 
 ```text
 105.168.114.0
