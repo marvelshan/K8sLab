@@ -4,6 +4,8 @@ Given a string s containing just the characters '(', ')', '{', '}', '[' and ']',
 
 這題要判斷說 {} 有沒有對應到相對應自己的括號，但是特別要注意的一點是 {[}] 沒有對應到的話就會是錯誤的，其實這點也就相對應的告訴我們解題的關鍵，就是要使用 Last in First out，也就是 stack，因為這樣使用的話才會是對稱的
 
+<img width="1071" height="432" alt="image" src="https://github.com/user-attachments/assets/3fe328a2-2471-4af9-8f49-bfbd9051d7b7" />
+
 ## 解題思路
 
 一開始要先設定一個 array 來裝前面的括號也就是`'(', '{', '['`，不用拿來裝後面的括號，因為我們會用的到的方法是 mapping 的方式來記錄對應的角色`{'(': ')'}`，所以假如我們看到前面，就要對應 mapping 到後面的括號，以下就是最簡單的模式
