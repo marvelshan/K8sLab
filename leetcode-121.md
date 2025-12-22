@@ -1,8 +1,16 @@
 # leetcode 121 Best Time to Buy and Sell Stock
 
+```
+Input: prices = [7,1,5,3,6,4]
+Output: 5
+```
+
 這題是給一個 array，讓他去走一遍，然後讓後續的數字去減去前面最低的數字，並獲得這個數字得最大值，
 
 最一開始的想法就是走過 array 每個數字，並且減去 array 裡面每個數字，這樣就可以得到答案，但這個很明顯就是 O(N^2)，
+
+<img width="1460" height="913" alt="image" src="https://github.com/user-attachments/assets/a99cbf7c-8e9c-4438-b812-8eb0cf276aa1" />
+
 
 所以再繼續往下想，他要先知道誰是最小值，然後讓後面的值去減掉前面最小的值，但後面出現過更小的不算，所以其實假如後面有更小的就直接覆蓋掉也不會影響，
 
