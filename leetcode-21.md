@@ -14,6 +14,8 @@ Return the head of the merged linked list.
 
 一開始要先建立一個 dummy node 來當作結果 list 的起點，這樣比較方便處理頭部，然後用一個指針 `ansList` 來追蹤目前要接下一個節點的位置。同時保留 `ansHead` 來最後返回真正的頭，因為 dummy 本身不算是結果
 
+<img width="1600" height="900" alt="image" src="https://github.com/user-attachments/assets/6c114a68-1422-4e53-92ca-c36c434104c6" />
+
 在 while 迴圈裡，只要兩個 list 還有一個有剩`while list1 or list2`，就繼續合併：
 
 - 如果 `list1` 已經沒了，直接把剩下的 `list2` 接上去，然後把 `list2` 往前移
